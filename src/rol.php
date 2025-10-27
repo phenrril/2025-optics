@@ -1,5 +1,11 @@
-<?php include_once "includes/header.php";
+<?php 
+session_start();
 require_once "../conexion.php";
+if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
+    header("Location: ../");
+    exit();
+}
+include_once "includes/header.php";
 $id = $_GET['id'];
 $sqlpermisos = mysqli_query($conexion, "SELECT * FROM permisos");
 $usuarios = mysqli_query($conexion, "SELECT * FROM usuario WHERE idusuario = $id");
