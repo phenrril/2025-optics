@@ -138,6 +138,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
     })
+    
     $('#btn_generar').click(function (e) {
         e.preventDefault();
         var rows = $('#tblDetalle tr').length;
@@ -263,6 +264,89 @@ document.addEventListener("DOMContentLoaded", function () {
     
 
 })
+
+// Función para guardar nuevo cliente
+function guardarNuevoCliente() {
+    console.log('guardarNuevoCliente llamada');
+    var nombre = $('#nombre_cliente').val();
+    var telefono = $('#telefono_cliente').val();
+    var direccion = $('#direccion_cliente').val();
+    
+    console.log('Datos:', {nombre, telefono, direccion});
+    
+    if (!nombre || !telefono || !direccion) {
+        Swal.fire({
+            position: 'top-end',
+            icon: 'warning',
+            title: 'Complete los campos obligatorios',
+            text: 'Nombre, Teléfono y Dirección son obligatorios',
+            showConfirmButton: false,
+            timer: 3000
+        });
+        return;
+    }
+    
+    $.ajax({
+        url: 'ajax.php',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            nuevo_cliente: true,
+            nombre_cliente: nombre,
+            telefono_cliente: telefono,
+            direccion_cliente: direccion,
+            dni_cliente: $('#dni_cliente').val(),
+            obrasocial_cliente: $('#obrasocial_cliente').val(),
+            medico_cliente: $('#medico_cliente').val()
+        },
+        success: function(response) {
+            console.log('Respuesta del servidor:', response);
+            if (response.success) {
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'success',
+                    title: response.mensaje,
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                
+                // Cerrar el modal
+                $('#nuevo_cliente_venta').modal('hide');
+                
+                // Llenar los campos con los datos del nuevo cliente
+                $('#idcliente').val(response.cliente.id);
+                $('#nom_cliente').val(response.cliente.label);
+                $('#tel_cliente').val(response.cliente.telefono);
+                $('#dir_cliente').val(response.cliente.direccion);
+                $('#obrasocial').val(response.cliente.obrasocial);
+                
+                // Limpiar el formulario del modal
+                $('#form_nuevo_cliente')[0].reset();
+            } else {
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Error',
+                    text: response.mensaje,
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.log('Error AJAX:', {xhr, status, error});
+            Swal.fire({
+                position: 'top-end',
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo guardar el cliente: ' + error,
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
+    });
+}
+
 // Simular venta - Calcular totales con descuentos
 function calcularVenta() {
     var abona = parseFloat(document.getElementById('abona').value) || 0;

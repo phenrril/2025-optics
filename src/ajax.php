@@ -337,4 +337,51 @@ if (isset($_GET['q'])) {
     
     echo $msg;
     die();
+
+// Crear nuevo cliente
+} else if (isset($_POST['nuevo_cliente'])) {
+    $nombre = mysqli_real_escape_string($conexion, $_POST['nombre_cliente']);
+    $telefono = mysqli_real_escape_string($conexion, $_POST['telefono_cliente']);
+    $direccion = mysqli_real_escape_string($conexion, $_POST['direccion_cliente']);
+    $dni = mysqli_real_escape_string($conexion, $_POST['dni_cliente'] ?? '');
+    $obrasocial = mysqli_real_escape_string($conexion, $_POST['obrasocial_cliente'] ?? '');
+    $medico = mysqli_real_escape_string($conexion, $_POST['medico_cliente'] ?? '');
+    
+    // Validar campos obligatorios
+    if (empty($nombre) || empty($telefono) || empty($direccion)) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Complete los campos obligatorios'));
+        die();
+    }
+    
+    // Verificar si el cliente ya existe
+    $query_existe = mysqli_query($conexion, "SELECT * FROM cliente WHERE nombre = '$nombre'");
+    if (mysqli_num_rows($query_existe) > 0) {
+        echo json_encode(array('success' => false, 'mensaje' => 'El cliente ya existe'));
+        die();
+    }
+    
+    // Insertar nuevo cliente
+    $query_insert = mysqli_query($conexion, "INSERT INTO cliente(nombre, telefono, direccion, usuario_id, dni, obrasocial, medico, estado) VALUES ('$nombre', '$telefono', '$direccion', $id_user, '$dni', '$obrasocial', '$medico', 1)");
+    
+    if ($query_insert) {
+        // Obtener los datos del cliente recién creado
+        $id_nuevo = mysqli_insert_id($conexion);
+        $query_datos = mysqli_query($conexion, "SELECT * FROM cliente WHERE idcliente = $id_nuevo");
+        $datos_cliente = mysqli_fetch_assoc($query_datos);
+        
+        echo json_encode(array(
+            'success' => true,
+            'mensaje' => 'Cliente registrado exitosamente',
+            'cliente' => array(
+                'id' => $datos_cliente['idcliente'],
+                'label' => $datos_cliente['nombre'],
+                'telefono' => $datos_cliente['telefono'],
+                'direccion' => $datos_cliente['direccion'],
+                'obrasocial' => $datos_cliente['obrasocial']
+            )
+        ));
+    } else {
+        echo json_encode(array('success' => false, 'mensaje' => 'Error al registrar el cliente'));
+    }
+    die();
 }

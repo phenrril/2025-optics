@@ -477,8 +477,13 @@ include_once "includes/header.php";
 
     <!-- Datos del Cliente -->
     <div class="card card-modern">
-        <div class="card-header card-header-modern">
-            <i class="fas fa-user mr-2"></i> Información del Cliente
+        <div class="card-header card-header-modern d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-user mr-2"></i> Información del Cliente
+            </div>
+            <button type="button" class="btn btn-modern btn-modern-success btn-sm" data-toggle="modal" data-target="#nuevo_cliente_venta">
+                <i class="fas fa-plus mr-1"></i> Nuevo Cliente
+            </button>
         </div>
         <div class="card-body card-body-modern">
                 <form method="post">
@@ -713,6 +718,58 @@ include_once "includes/header.php";
         <button class="btn btn-modern btn-modern-secondary btn-lg" id="btn_parcial">
             <i class="fas fa-calculator mr-2"></i> Simular Venta
         </button>
+    </div>
+</div>
+
+<!-- Modal para agregar nuevo cliente -->
+<div id="nuevo_cliente_venta" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="modal-nuevo-cliente" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title text-white" id="modal-nuevo-cliente">
+                    <i class="fas fa-user-plus mr-2"></i> Nuevo Cliente
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form_nuevo_cliente">
+                    <div class="form-group">
+                        <label for="nombre_cliente"><i class="fas fa-user mr-2"></i> Nombre *</label>
+                        <input type="text" class="form-control" id="nombre_cliente" name="nombre_cliente" placeholder="Ingrese Nombre" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="telefono_cliente"><i class="fas fa-phone mr-2"></i> Teléfono *</label>
+                        <input type="text" class="form-control" id="telefono_cliente" name="telefono_cliente" placeholder="Ingrese Teléfono" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="direccion_cliente"><i class="fas fa-map-marker-alt mr-2"></i> Dirección *</label>
+                        <input type="text" class="form-control" id="direccion_cliente" name="direccion_cliente" placeholder="Ingrese Dirección" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dni_cliente"><i class="fas fa-id-card mr-2"></i> DNI</label>
+                        <input type="text" class="form-control" id="dni_cliente" name="dni_cliente" placeholder="Ingrese DNI">
+                    </div>
+                    <div class="form-group">
+                        <label for="obrasocial_cliente"><i class="fas fa-hospital mr-2"></i> Obra Social</label>
+                        <input type="text" class="form-control" id="obrasocial_cliente" name="obrasocial_cliente" placeholder="Ingrese Obra Social">
+                    </div>
+                    <div class="form-group">
+                        <label for="medico_cliente"><i class="fas fa-user-md mr-2"></i> Médico</label>
+                        <input type="text" class="form-control" id="medico_cliente" name="medico_cliente" placeholder="Ingrese Médico">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-2"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-modern btn-modern-primary" id="btn_guardar_cliente" onclick="guardarNuevoCliente()">
+                    <i class="fas fa-save mr-2"></i> Guardar Cliente
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
