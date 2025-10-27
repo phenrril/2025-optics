@@ -12,7 +12,8 @@ $usuarios = mysqli_query($conexion, "SELECT * FROM usuario");
 $totalU= mysqli_num_rows($usuarios);
 $clientes = mysqli_query($conexion, "SELECT * FROM cliente");
 $totalC = mysqli_num_rows($clientes);
-$productos = mysqli_query($conexion, "SELECT * FROM producto");
+
+$productos = mysqli_query($conexion, "SELECT * FROM producto WHERE existencia > 0");
 $totalP = mysqli_num_rows($productos);
 $ventas = mysqli_query($conexion, "SELECT * FROM ventas");
 $totalV = mysqli_num_rows($ventas);
@@ -119,7 +120,8 @@ $totalV = mysqli_num_rows($ventas);
 <?php include_once "includes/footer.php"; 
 
 $arreglo = array();
-$query = mysqli_query($conexion, "SELECT descripcion, existencia FROM producto WHERE existencia <= 10 ORDER BY existencia ASC LIMIT 10");
+    // Solo mostrar productos activos con stock bajo
+    $query = mysqli_query($conexion, "SELECT descripcion, existencia FROM producto WHERE existencia <= 10 AND existencia > 0 AND estado = 1 ORDER BY existencia ASC LIMIT 10");
 while ($data = mysqli_fetch_array($query)) {
     $arreglo[] = $data;
 }

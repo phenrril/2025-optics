@@ -31,7 +31,8 @@ if (empty($existe) && $id_user != 1) {
 <?php
 
     $arreglo = array();
-    $query = mysqli_query($conexion, "SELECT descripcion, existencia FROM producto WHERE existencia <= 10 ORDER BY existencia ASC LIMIT 10");
+    // Solo mostrar productos activos con stock bajo
+    $query = mysqli_query($conexion, "SELECT descripcion, existencia FROM producto WHERE existencia <= 10 AND existencia > 0 AND estado = 1 ORDER BY existencia ASC LIMIT 10");
     while ($data = mysqli_fetch_array($query)) {
         $arreglo[] = $data;
     }

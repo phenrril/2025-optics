@@ -64,6 +64,64 @@ if ($_POST) {
                     </form>
                 </div>
             </div>
+            
+            <!-- Card para ocultar productos sin stock -->
+            <div class="card mt-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-box-open"></i> Gestión de Productos</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Ocultar automáticamente todos los productos sin stock en la base de datos.</p>
+                    <div id="resultado-ocultar" class="mb-3"></div>
+                    <button type="button" class="btn btn-warning" id="btnOcultarProductos">
+                        <i class="fas fa-eye-slash"></i> Ocultar Productos Sin Stock
+                    </button>
+                </div>
+            </div>
         </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    $('#btnOcultarProductos').click(function() {
+        // Deshabilitar el botón mientras se procesa
+        $(this).prop('disabled', true);
+        $(this).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+        
+        // Limpiar resultado anterior
+        $('#resultado-ocultar').html('');
+        
+        // Hacer la petición AJAX
+        $.ajax({
+            url: 'ocultar_productos_sin_stock.php',
+            type: 'POST',
+            data: {},
+            dataType: 'json',
+            success: function(response) {
+                $('#resultado-ocultar').html(response.html);
+                $('#btnOcultarProductos').prop('disabled', false);
+                $('#btnOcultarProductos').html('<i class="fas fa-eye-slash"></i> Ocultar Productos Sin Stock');
+                
+                // Si fue exitoso, mostrar SweetAlert
+                if (response.success) {
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Productos Ocultados',
+                        text: response.message,
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                }
+            },
+            error: function() {
+                $('#resultado-ocultar').html('<div class="alert alert-danger">Error al procesar la solicitud</div>');
+                $('#btnOcultarProductos').prop('disabled', false);
+                $('#btnOcultarProductos').html('<i class="fas fa-eye-slash"></i> Ocultar Productos Sin Stock');
+            }
+        });
+    });
+});
+</script>
+
 <?php include_once "includes/footer.php"; ?>
