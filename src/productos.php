@@ -86,7 +86,8 @@ if (!empty($_POST)) {
         </thead>
         <tbody>
             <?php
-                $query = mysqli_query($conexion, "SELECT * FROM producto ORDER BY codproducto DESC");
+                // Mostrar solo productos con stock (existencia > 0)
+                $query = mysqli_query($conexion, "SELECT * FROM producto WHERE existencia > 0 ORDER BY codproducto DESC");
                 $result = mysqli_num_rows($query);
                 
                 if ($result > 0) {

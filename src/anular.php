@@ -15,6 +15,11 @@ while ($row = mysqli_fetch_assoc($consultaDetalle)) {
     $stockNuevo = mysqli_fetch_assoc($stockActual);
     $stockTotal = $stockNuevo['existencia'] + $cantidad;
     $stock = mysqli_query($conexion, "UPDATE producto SET existencia = $stockTotal WHERE codproducto = $id_producto");
+    
+    // Reactivar producto automáticamente cuando se restaura stock y queda mayor que 0
+    if ($stockTotal > 0) {
+        $reactivar = mysqli_query($conexion, "UPDATE producto SET estado = 1 WHERE codproducto = $id_producto");
+    }
 } 
 $eliminarDet = mysqli_query($conexion, "DELETE FROM detalle_venta WHERE id_venta = $id_venta"); 
 $eliminarPost = mysqli_query($conexion, "DELETE FROM postpagos WHERE id_venta = $id_venta"); 

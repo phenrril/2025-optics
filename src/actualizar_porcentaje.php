@@ -14,14 +14,15 @@ if($id_marca == "" || $id_porc == ""){
     })</script>";
     exit;
 }
-$query = mysqli_query($conexion, "SELECT * FROM producto WHERE marca = '$id_marca'");
+// Solo actualizar precios de productos que tienen stock y están activos
+$query = mysqli_query($conexion, "SELECT * FROM producto WHERE marca = '$id_marca' AND existencia > 0 AND estado = 1");
 
 if (mysqli_num_rows($query) > 0) {
 $valueventa = mysqli_fetch_assoc($query);
 //$precio = $valueventa['precio'];
 //$prueba=1 +($id_porc/100);
 $precio_actualizado=1 +($id_porc/100);
-$update = mysqli_query($conexion, "UPDATE producto SET precio = precio * $precio_actualizado WHERE marca = '$id_marca'");
+$update = mysqli_query($conexion, "UPDATE producto SET precio = precio * $precio_actualizado WHERE marca = '$id_marca' AND existencia > 0 AND estado = 1");
 if($update){
     $result = mysqli_affected_rows($conexion);
     if($result > 0){

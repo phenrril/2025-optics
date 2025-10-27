@@ -197,6 +197,15 @@ if (isset($_GET['q'])) {
             if (!$stock) {
                 throw new Exception("Error al actualizar stock: " . mysqli_error($conexion));
             }
+
+            // Ocultar producto automáticamente cuando el stock llegue a 0
+            if ($stockTotal <= 0) {
+                $ocultar = mysqli_query($conexion, "UPDATE producto SET estado = 0 WHERE codproducto = $id_producto");
+                if (!$ocultar) {
+                    // No lanzamos excepción aquí para no revertir la venta, solo registramos
+                    error_log("Error al ocultar producto sin stock: " . mysqli_error($conexion));
+                }
+            }
         }
 
         // Insertar graduaciones
