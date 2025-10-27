@@ -1,7 +1,6 @@
-<?php session_start();
-if (empty($_SESSION['active'])) {
-    header('location: ../');
-}
+<?php
+// La sesión ya debería estar iniciada desde el archivo que incluye este header
+// session_start(); ya no es necesario aquí
 ?>
 <!DOCTYPE html>
 <html lang="en">

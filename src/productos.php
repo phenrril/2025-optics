@@ -1,5 +1,5 @@
 <?php 
-include_once "includes/header.php";
+session_start();
 include "../conexion.php";
 
 // Validar sesión
@@ -18,6 +18,8 @@ if (empty($existe) && $id_user != 1) {
     header("Location: permisos.php");
     exit();
 }
+
+include_once "includes/header.php";
 
 if (!empty($_POST)) {
     $codigo = $_POST['codigo'];
@@ -66,12 +68,147 @@ if (!empty($_POST)) {
 }
 ?>
 
-<button class="btn btn-primary mb-2" type="button" data-toggle="modal" data-target="#nuevo_producto"><i class="fas fa-plus"></i></button>
-<?php echo isset($alert) ? $alert : ''; ?>
+<style>
+/* Estilos modernos para productos */
+.productos-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
 
-<div class="table-responsive">
-    <table class="table table-striped table-bordered" id="tbl">
-        <thead class="thead-dark">
+.page-header-modern {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(17, 153, 142, 0.3);
+}
+
+.page-header-modern h2 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 2rem;
+}
+
+.btn-modern-icon {
+    border-radius: 10px;
+    padding: 12px 30px;
+    font-weight: 600;
+    transition: all 0.3s;
+    border: none;
+    font-size: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-modern-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-modern-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-modern-primary:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #6a4190 100%);
+    color: white;
+}
+
+.card-modern {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+
+.card-header-modern {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    padding: 20px 25px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    border: none;
+}
+
+.table-modern {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-modern thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding: 15px;
+    border: none;
+}
+
+.table-modern tbody tr {
+    transition: all 0.3s;
+}
+
+.table-modern tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.table-modern tbody td {
+    padding: 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.badge-custom {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.btn-action {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    transition: all 0.3s;
+    margin-right: 5px;
+}
+
+.btn-action:hover {
+    transform: scale(1.1);
+}
+</style>
+
+<div class="productos-container">
+    <div class="page-header-modern">
+        <h2><i class="fas fa-boxes mr-2"></i> Gestión de Productos</h2>
+        <p class="mb-0 mt-2">Administra tus productos de manera eficiente</p>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <button class="btn btn-modern-primary btn-modern-icon" type="button" data-toggle="modal" data-target="#nuevo_producto">
+            <i class="fas fa-plus mr-2"></i> Nuevo Producto
+        </button>
+        <div class="alert alert-light border-0 shadow-sm mb-0 py-2 px-3">
+            <i class="fas fa-info-circle text-primary mr-2"></i>
+            <strong>Total productos con stock:</strong> 
+            <span class="badge badge-info" id="total-productos">0</span>
+        </div>
+    </div>
+
+    <?php echo isset($alert) ? $alert : ''; ?>
+
+<div class="card-modern">
+    <div class="card-body-modern">
+        <div class="table-responsive">
+            <table class="table table-modern" id="tbl">
+                <thead class="thead-dark">
             <tr>
                 <th>#</th>
                 <th>Código</th>
@@ -86,16 +223,28 @@ if (!empty($_POST)) {
         </thead>
         <tbody>
             <?php
-                // Mostrar solo productos con stock (existencia > 0)
-                $query = mysqli_query($conexion, "SELECT * FROM producto WHERE existencia > 0 ORDER BY codproducto DESC");
+                // Mostrar solo productos con stock (existencia > 0) Y activos (estado = 1)
+                $query = mysqli_query($conexion, "SELECT * FROM producto WHERE existencia > 0 AND estado = 1 ORDER BY codproducto DESC");
                 $result = mysqli_num_rows($query);
                 
                 if ($result > 0) {
                     while ($data = mysqli_fetch_assoc($query)) {
                         if ($data['estado'] == 1) {
-                            $estado = '<span class="badge badge-pill badge-success">Activo</span>';
+                            $estado = '<span class="badge badge-custom badge-success"><i class="fas fa-check-circle mr-1"></i>Activo</span>';
                         } else {
-                            $estado = '<span class="badge badge-pill badge-danger">Inactivo</span>';
+                            $estado = '<span class="badge badge-custom badge-danger"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>';
+                        }
+                        
+                        // Stock bajo
+                        if ($data['existencia'] <= 10 && $data['existencia'] > 0) {
+                            $stock_class = 'text-warning';
+                            $stock_icon = '<i class="fas fa-exclamation-triangle mr-1"></i>';
+                        } elseif ($data['existencia'] <= 0) {
+                            $stock_class = 'text-danger';
+                            $stock_icon = '<i class="fas fa-times-circle mr-1"></i>';
+                        } else {
+                            $stock_class = 'text-success';
+                            $stock_icon = '<i class="fas fa-check-circle mr-1"></i>';
                         }
                 ?>
                 <tr>
@@ -104,29 +253,31 @@ if (!empty($_POST)) {
                     <td><?php echo $data['descripcion']; ?></td>
                     <td><?php echo $data['marca']; ?></td>
                     <td><?php echo number_format($data['precio'], 2); ?></td>
-                    <td><?php echo $data['existencia']; ?></td>
+                    <td><span class="<?php echo $stock_class; ?>"><?php echo $stock_icon; ?><?php echo $data['existencia']; ?></span></td>
                     <td><?php echo $estado; ?></td>
                     <td><?php echo number_format($data['precio_bruto'], 2); ?></td>
                     <td>
-                        <?php if ($data['estado'] == 1) { ?>
-                            <a href="agregar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-primary btn-sm" title="Ver detalles">
-                                <i class='fas fa-audio-description'></i>
-                            </a>
-                            <a href="editar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-success btn-sm" title="Editar">
-                                <i class='fas fa-edit'></i>
-                            </a>
-                            <form action="eliminar_producto.php?id=<?php echo $data['codproducto']; ?>" method="post" class="confirmar d-inline">
-                                <button class="btn btn-danger btn-sm" type="submit" title="Eliminar">
-                                    <i class='fas fa-trash-alt'></i>
-                                </button>
-                            </form>
-                        <?php } ?>
-                        
-                        <?php if ($data['estado'] == 0) { ?>
-                            <a href="activar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-warning btn-sm" title="Activar">
-                                <i class='fas fa-check-circle'></i>
-                            </a>
-                        <?php } ?>
+                        <div class="btn-group" role="group">
+                            <?php if ($data['estado'] == 1) { ?>
+                                <a href="agregar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-primary btn-sm btn-action" title="Agregar Stock">
+                                    <i class='fas fa-plus-circle'></i>
+                                </a>
+                                <a href="editar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-success btn-sm btn-action" title="Editar">
+                                    <i class='fas fa-edit'></i>
+                                </a>
+                                <form action="eliminar_producto.php?id=<?php echo $data['codproducto']; ?>" method="post" class="confirmar d-inline">
+                                    <button class="btn btn-danger btn-sm btn-action" type="submit" title="Eliminar">
+                                        <i class='fas fa-trash-alt'></i>
+                                    </button>
+                                </form>
+                            <?php } ?>
+                            
+                            <?php if ($data['estado'] == 0) { ?>
+                                <a href="activar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-warning btn-sm btn-action" title="Activar">
+                                    <i class='fas fa-check-circle'></i>
+                                </a>
+                            <?php } ?>
+                        </div>
                     </td>
                 </tr>
             <?php }
@@ -138,8 +289,10 @@ if (!empty($_POST)) {
                     </td>
                 </tr>
             <?php } ?>
-        </tbody>
-    </table>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <!-- Modal Nuevo Producto -->
@@ -208,46 +361,47 @@ if (!empty($_POST)) {
 </div>
 
 <!-- Actualizar Precio por Marca -->
-<div class="row mt-4">
-    <div class="col-lg-12">
-        <div class="card border-info">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-tags mr-2"></i> Actualizar Precio por Marca</h5>
-            </div>
-            <div class="card-body">
-                <form method="post" id="form_marca">
-                    <div class="row justify-content-center">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label class="font-weight-bold">Marca</label>
-                                <input id="id_marca" class="form-control" type="text" name="id_marca" placeholder="Ingrese la marca" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label class="font-weight-bold">Porcentaje</label>
-                                <input id="id_porcentaje" class="form-control" type="number" name="id_porcentaje" placeholder="Ingrese el porcentaje" step="0.01" min="0" max="100" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <div class="form-group w-100">
-                                <button type="button" class="btn btn-info btn-block" id="btn_marca">
-                                    <i class="fas fa-sync-alt mr-2"></i> Actualizar Precios
-                                </button>
-                            </div>
-                        </div>
+<div class="card-modern mt-4">
+    <div class="card-header-modern">
+        <i class="fas fa-tags mr-2"></i> Actualizar Precio por Marca
+    </div>
+    <div class="card-body-modern">
+        <form method="post" id="form_marca">
+            <div class="row justify-content-center">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="font-weight-bold"><i class="fas fa-tag mr-2"></i>Marca</label>
+                        <input id="id_marca" class="form-control" type="text" name="id_marca" placeholder="Ingrese la marca" required>
                     </div>
-                </form>
-                <div id="prueba" class="mt-3"></div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="font-weight-bold"><i class="fas fa-percent mr-2"></i>Porcentaje</label>
+                        <input id="id_porcentaje" class="form-control" type="number" name="id_porcentaje" placeholder="Ingrese el porcentaje" step="0.01" min="0" max="100" required>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-group w-100">
+                        <button type="button" class="btn btn-modern-primary btn-block btn-modern-icon" id="btn_marca">
+                            <i class="fas fa-sync-alt mr-2"></i> Actualizar Precios
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
+        </form>
+        <div id="prueba" class="mt-3"></div>
     </div>
 </div>
+</div> <!-- End productos-container -->
 
 <?php include_once "includes/footer.php"; ?>
 
 <script>
     $(document).ready(function() {
+        // Actualizar contador de productos
+        var totalProductos = <?php echo $result; ?>;
+        $('#total-productos').text(totalProductos);
+        
         $("#btn_marca").click(function() {
             $.ajax({
                 url: "actualizar_porcentaje.php",
