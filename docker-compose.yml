@@ -1,0 +1,45 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: optica_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: u375391241_sis_ventas
+      MYSQL_USER: opticauser
+      MYSQL_PASSWORD: Optica2024
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ./u375391241_sis_ventas.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - optica-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  web:
+    build: .
+    container_name: optica_web
+    restart: always
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_USER: opticauser
+      DB_PASSWORD: Optica2024
+      DB_NAME: u375391241_sis_ventas
+    networks:
+      - optica-network
+
+networks:
+  optica-network:
+    driver: bridge
+
