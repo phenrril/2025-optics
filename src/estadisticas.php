@@ -25,6 +25,49 @@ $productos = mysqli_query($conexion, "SELECT * FROM producto WHERE existencia > 
 $totalP = mysqli_num_rows($productos);
 $ventas = mysqli_query($conexion, "SELECT * FROM ventas");
 $totalV = mysqli_num_rows($ventas);
+// KPIs negocio
+$hoy = date('Y-m-d');
+$inicioMes = date('Y-m-01');
+$inicioMesAnterior = date('Y-m-01', strtotime('-1 month'));
+$finMesAnterior = date('Y-m-t', strtotime('-1 month'));
+
+// Ventas hoy
+$qVentasHoy = mysqli_query($conexion, "SELECT COUNT(*) as n, IFNULL(SUM(total),0) as t FROM ventas WHERE DATE(fecha) = '$hoy'");
+$ventasHoy = mysqli_fetch_assoc($qVentasHoy);
+$ventasHoyCount = intval($ventasHoy['n']);
+$ventasHoyTotal = floatval($ventasHoy['t']);
+
+// Ventas mes actual
+$qVentasMes = mysqli_query($conexion, "SELECT COUNT(*) as n, IFNULL(SUM(total),0) as t FROM ventas WHERE fecha BETWEEN '$inicioMes' AND NOW()");
+$ventasMes = mysqli_fetch_assoc($qVentasMes);
+$ventasMesCount = intval($ventasMes['n']);
+$ventasMesTotal = floatval($ventasMes['t']);
+$ticketPromedio = $ventasMesCount > 0 ? ($ventasMesTotal / $ventasMesCount) : 0;
+
+// Ventas mes anterior (para variación)
+$qVentasMesAnt = mysqli_query($conexion, "SELECT IFNULL(SUM(total),0) as t FROM ventas WHERE fecha BETWEEN '$inicioMesAnterior' AND '$finMesAnterior'");
+$ventasMesAnt = mysqli_fetch_assoc($qVentasMesAnt);
+$ventasMesAnteriorTotal = floatval($ventasMesAnt['t']);
+$variacionMes = $ventasMesAnteriorTotal > 0 ? (($ventasMesTotal - $ventasMesAnteriorTotal) / $ventasMesAnteriorTotal) * 100 : 0;
+
+// Ingresos/Egresos del mes (tablas ingresos/egresos)
+$qIngMes = mysqli_query($conexion, "SELECT IFNULL(SUM(ingresos),0) as s FROM ingresos WHERE fecha BETWEEN '$inicioMes' AND NOW() ");
+$ingMes = mysqli_fetch_assoc($qIngMes);
+$ingresosMes = floatval($ingMes['s']);
+
+$qEgrMes = mysqli_query($conexion, "SELECT IFNULL(SUM(egresos),0) as s FROM egresos WHERE fecha BETWEEN '$inicioMes' AND NOW() ");
+$egrMes = mysqli_fetch_assoc($qEgrMes);
+$egresosMes = floatval($egrMes['s']);
+$gananciaMes = $ventasMesTotal - $egresosMes; // aproximación operativa
+
+// Serie: Ventas últimos 30 días
+$ventas30dLabels = [];
+$ventas30dData = [];
+$qSerie = mysqli_query($conexion, "SELECT DATE(fecha) d, IFNULL(SUM(total),0) s FROM ventas WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(fecha) ORDER BY d ASC");
+while ($row = mysqli_fetch_assoc($qSerie)) {
+    $ventas30dLabels[] = $row['d'];
+    $ventas30dData[] = $row['s'];
+}
 ?>
 
 <style>
@@ -202,11 +245,11 @@ $totalV = mysqli_num_rows($ventas);
         <div class="col-xl-3 col-md-6 mb-4">
             <a href="ventas.php" class="stats-card" style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">
                 <div class="stats-card-header text-white">
-                    <i class="fas fa-shopping-cart mr-2"></i> Ventas
+                    <i class="fas fa-shopping-cart mr-2"></i> Ventas Hoy
                 </div>
                 <div class="stats-card-body text-white text-center">
-                    <div class="stats-value"><?php echo $totalV; ?></div>
-                    <p class="mb-0 mt-2 opacity-75"><small>Ventas realizadas</small></p>
+                    <div class="stats-value">$<?php echo number_format($ventasHoyTotal, 2); ?></div>
+                    <p class="mb-0 mt-2 opacity-75"><small><?php echo $ventasHoyCount; ?> tickets</small></p>
                     <div class="stats-icon" style="right: 20px; bottom: 20px;">
                         <i class="fas fa-dollar-sign"></i>
                     </div>
@@ -215,12 +258,72 @@ $totalV = mysqli_num_rows($ventas);
         </div>
     </div>
 
+    <!-- KPIs del mes -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card" style="background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);">
+                <div class="stats-card-header text-white">
+                    <i class="fas fa-calendar-alt mr-2"></i> Ventas del Mes
+                </div>
+                <div class="stats-card-body text-white text-center">
+                    <div class="stats-value">$<?php echo number_format($ventasMesTotal, 2); ?></div>
+                    <p class="mb-0 mt-2 opacity-75"><small><?php echo $ventasMesCount; ?> tickets</small></p>
+                    <div class="stats-icon" style="right: 20px; bottom: 20px;">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
+                <div class="stats-card-header text-white">
+                    <i class="fas fa-receipt mr-2"></i> Ticket Promedio
+                </div>
+                <div class="stats-card-body text-white text-center">
+                    <div class="stats-value">$<?php echo number_format($ticketPromedio, 2); ?></div>
+                    <p class="mb-0 mt-2 opacity-75"><small>Este mes</small></p>
+                    <div class="stats-icon" style="right: 20px; bottom: 20px;">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card" style="background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);">
+                <div class="stats-card-header text-white">
+                    <i class="fas fa-exchange-alt mr-2"></i> Variación Mensual
+                </div>
+                <div class="stats-card-body text-white text-center">
+                    <div class="stats-value"><?php echo ($variacionMes >= 0 ? '+' : ''); ?><?php echo number_format($variacionMes, 1); ?>%</div>
+                    <p class="mb-0 mt-2 opacity-75"><small>vs. mes anterior</small></p>
+                    <div class="stats-icon" style="right: 20px; bottom: 20px;">
+                        <i class="fas fa-percent"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="stats-card-header text-white">
+                    <i class="fas fa-balance-scale mr-2"></i> Resultado Operativo
+                </div>
+                <div class="stats-card-body text-white text-center">
+                    <div class="stats-value">$<?php echo number_format($gananciaMes, 2); ?></div>
+                    <p class="mb-0 mt-2 opacity-75"><small>Ingresos: $<?php echo number_format($ingresosMes,2); ?> · Egresos: $<?php echo number_format($egresosMes,2); ?></small></p>
+                    <div class="stats-icon" style="right: 20px; bottom: 20px;">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Gráficos -->
     <div class="row">
         <div class="col-lg-6 mb-4">
             <div class="chart-card">
                 <div class="chart-header">
-                    <i class="fas fa-chart-area mr-2"></i> Productos con Stock Mínimo
+                    <i class="fas fa-chart-area mr-2"></i> Ventas últimos 30 días
                 </div>
                 <div class="chart-body">
                     <canvas id="myChart"></canvas>
@@ -251,7 +354,12 @@ while ($data = mysqli_fetch_array($query)) {
 }
 
 $arreglo1 = array();
-$query1 = mysqli_query($conexion, "SELECT p.codproducto, p.descripcion, d.id_producto, d.cantidad, SUM(d.cantidad) as total FROM producto p INNER JOIN detalle_venta d WHERE p.codproducto = d.id_producto group by d.id_producto ORDER BY d.cantidad DESC LIMIT 5");
+$query1 = mysqli_query($conexion, "SELECT p.codproducto, p.descripcion, d.id_producto, SUM(d.cantidad) as total 
+FROM producto p 
+INNER JOIN detalle_venta d ON p.codproducto = d.id_producto 
+GROUP BY d.id_producto, p.codproducto, p.descripcion 
+ORDER BY total DESC 
+LIMIT 5");
 while ($data1 = mysqli_fetch_array($query1)) {
     $arreglo1[] = $data1;
 }
@@ -262,20 +370,16 @@ while ($data1 = mysqli_fetch_array($query1)) {
 <script>
     var ctx = document.getElementById('myChart').getContext('2d');
     var myChart = new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
         defaultFontFamily: 'Poppins',
-        labels: [<?php foreach($arreglo as $a) { echo '"' . $a['descripcion'] . '",'; } ?>],
+        labels: [<?php echo '"' . implode('","', $ventas30dLabels) . '"'; ?>],
         datasets: [{
-        label: 'Existencia',
-        data: [<?php foreach($arreglo as $a) { echo $a['existencia'] . ','; } ?>],
-        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-        borderColor: 'rgba(255, 99, 132, 1)',
-        borderWidth: 3,
-                                pointStyle: 'circle',
-                                pointRadius: 5,
-                                pointBorderColor: 'transparent',
-                                pointBackgroundColor: 'rgba(220,53,69,1)',
+        label: 'Ventas ($)',
+        data: [<?php echo implode(',', array_map(function($n){ return is_numeric($n)?$n:0; }, $ventas30dData)); ?>],
+        backgroundColor: 'rgba(102, 126, 234, 0.6)',
+        borderColor: 'rgba(102, 126, 234, 1)',
+        borderWidth: 1,
     }],
     },
                     options:{
@@ -321,7 +425,7 @@ while ($data1 = mysqli_fetch_array($query1)) {
                                         },
                                         scaleLabel: {
                                             display: true,
-                                            labelString: 'Cantidad',
+                                            labelString: 'Monto ($)',
                                             fontFamily: "Poppins"
                                         },
                                         ticks: {
