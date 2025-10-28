@@ -1,4 +1,4 @@
--- =====================================================
+bvggb-- =====================================================
 -- SCRIPT PARA CREAR TABLA DE HISTORIA CLÍNICA SIMPLIFICADA
 -- =====================================================
 -- Solo incluye: Cliente, Fecha, Tipo de Lente, Graduaciones
