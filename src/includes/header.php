@@ -49,6 +49,7 @@
                         <a class="nav-link" href="estadisticas.php"><div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div> Estadisticas</a>
                         <a class="nav-link" href="calendario.php"><div class="sb-nav-link-icon"><i class="fas fa-calendar"></i></div> Calendario</a>
                         <a class="nav-link" href="reporte.php"><div class="sb-nav-link-icon"><i class="fas fa-chart-bar"></i></div> Reportes</a>
+                        <a class="nav-link" href="reporte_costo.php"><div class="sb-nav-link-icon"><i class="fas fa-tag"></i></div> Reporte de Costo</a>
                         <a class="nav-link" href="productos.php"><div class="sb-nav-link-icon"><i class="fab fa-product-hunt"></i></div> Productos</a>
                         <a class="nav-link" href="usuarios.php"><div class="sb-nav-link-icon"><i class="fas fa-user"></i></div> Usuarios </a>
                         <a class="nav-link" href="config.php"><div class="sb-nav-link-icon"><i class="fas fa-cogs"></i></div> Configuracion </a>

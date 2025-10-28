@@ -526,9 +526,15 @@ function listar() {
                 </tr>`;
             } else {
                 response.forEach(row => {
+                    // Mostrar badge de costo si es un producto de costo
+                    let costoBadge = '';
+                    if (row['costo'] == 1) {
+                        costoBadge = '<span class="badge badge-modern" style="background: #17a2b8; color: white; margin-left: 5px;"><i class="fas fa-tag"></i></span>';
+                    }
+                    
                     html += `<tr>
                     <td><span class="badge badge-modern" style="background: #667eea; color: white;">${row['codigo'] || row['id']}</span></td>
-                    <td><strong>${row['descripcion']}</strong></td>
+                    <td><strong>${row['descripcion']}</strong>${costoBadge}</td>
                     <td><span class="badge badge-modern" style="background: #28a745; color: white;">${row['cantidad']}</span></td>
                     <td>$${parseFloat(row['precio_venta']).toFixed(2)}</td>
                     <td><strong>$${parseFloat(row['sub_total']).toFixed(2)}</strong></td>

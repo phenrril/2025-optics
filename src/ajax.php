@@ -39,6 +39,7 @@ if (isset($_GET['q'])) {
         $data['value'] = $row['descripcion'];
         $data['precio'] = floatval($row['precio']);
         $data['existencia'] = intval($row['existencia']);
+        $data['costo'] = intval($row['costo']);
         array_push($datos, $data);
     }
     echo json_encode($datos);
@@ -47,7 +48,7 @@ if (isset($_GET['q'])) {
 // Obtener detalle de venta temporal
 } else if (isset($_GET['detalle'])) {
     $datos = array();
-    $detalle = mysqli_query($conexion, "SELECT d.*, p.codproducto, p.descripcion, p.codigo FROM detalle_temp d INNER JOIN producto p ON d.id_producto = p.codproducto WHERE d.id_usuario = $id_user");
+    $detalle = mysqli_query($conexion, "SELECT d.*, p.codproducto, p.descripcion, p.codigo, p.costo FROM detalle_temp d INNER JOIN producto p ON d.id_producto = p.codproducto WHERE d.id_usuario = $id_user");
     while ($row = mysqli_fetch_assoc($detalle)) {
         $data['id'] = intval($row['id']); // ID de detalle_temp para eliminar
         $data['codigo'] = $row['codigo']; // Código de producto
@@ -55,6 +56,7 @@ if (isset($_GET['q'])) {
         $data['cantidad'] = intval($row['cantidad']);
         $data['precio_venta'] = floatval($row['precio_venta']);
         $data['sub_total'] = floatval($row['precio_venta']) * floatval($row['cantidad']);
+        $data['costo'] = intval($row['costo']);
         array_push($datos, $data);
     }
     echo json_encode($datos);
