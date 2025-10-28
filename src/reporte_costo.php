@@ -9,7 +9,7 @@ if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
 }
 
 $id_user = intval($_SESSION['idUser']);
-$permiso = "reportes";
+$permiso = "reporte_costo";
 $permiso_escaped = mysqli_real_escape_string($conexion, $permiso);
 
 $sql = mysqli_query($conexion, "SELECT p.*, d.* FROM permisos p INNER JOIN detalle_permisos d ON p.id = d.id_permiso WHERE d.id_usuario = $id_user AND p.nombre = '$permiso_escaped'");
