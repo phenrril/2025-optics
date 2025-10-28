@@ -5,35 +5,44 @@ if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
     header("Location: ../");
     exit();
 }
+
+$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+if (isset($_POST['permisos'])) {
+    $id_user = $_GET['id'];
+    $permisos = $_POST['permisos'];
+    mysqli_query($conexion, "DELETE FROM detalle_permisos WHERE id_usuario = $id_user");
+    
+    $success = false;
+    if (isset($permisos) && !empty($permisos)) {
+        foreach ($permisos as $permiso) {
+            $sql = mysqli_query($conexion, "INSERT INTO detalle_permisos(id_usuario, id_permiso) VALUES ('$id_user','$permiso')");
+            $success = $sql;
+        }
+    } else {
+        // Si no hay permisos, el DELETE ya se ejecutó, considerar como éxito
+        $success = true;
+    }
+    
+    if ($success) {
+        header("Location: rol.php?id=".$id_user."&m=si");
+        exit();
+    }
+}
+
 include_once "includes/header.php";
-$id = $_GET['id'];
+
 $sqlpermisos = mysqli_query($conexion, "SELECT * FROM permisos");
 $usuarios = mysqli_query($conexion, "SELECT * FROM usuario WHERE idusuario = $id");
 $consulta = mysqli_query($conexion, "SELECT * FROM detalle_permisos WHERE id_usuario = $id");
 $resultUsuario = mysqli_num_rows($usuarios);
 if (empty($resultUsuario)) {
     header("Location: usuarios.php");
+    exit();
 }
 $datos = array();
 foreach ($consulta as $asignado) {
     $datos[$asignado['id_permiso']] = true;
-}
-if (isset($_POST['permisos'])) {
-    $id_user = $_GET['id'];
-    $permisos = $_POST['permisos'];
-    mysqli_query($conexion, "DELETE FROM detalle_permisos WHERE id_usuario = $id_user");
-    if ($permisos != "") {
-        foreach ($permisos as $permiso) {
-            $sql = mysqli_query($conexion, "INSERT INTO detalle_permisos(id_usuario, id_permiso) VALUES ('$id_user','$permiso')");
-            if ($sql == 1) {
-                header("Location:rol.php?id=".$id_user."&m=si");
-            } else {
-                $alert = '<div class="alert alert-primary" role="alert">
-                            Error al actualizar permisos
-                        </div>';
-            }
-        }
-    }
 }
 ?>
 
