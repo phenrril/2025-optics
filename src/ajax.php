@@ -13,11 +13,12 @@ $id_user = intval($_SESSION['idUser']); // Sanitizar ID de usuario
 // Buscar clientes (autocomplete)
 if (isset($_GET['q'])) {
     $datos = array();
-    $nombre = mysqli_real_escape_string($conexion, $_GET['q']);
-    $cliente = mysqli_query($conexion, "SELECT * FROM cliente WHERE nombre LIKE '%$nombre%' AND estado = 1 LIMIT 20");
+    $busqueda = mysqli_real_escape_string($conexion, $_GET['q']);
+    $cliente = mysqli_query($conexion, "SELECT * FROM cliente WHERE (nombre LIKE '%$busqueda%' OR dni LIKE '%$busqueda%' OR telefono LIKE '%$busqueda%') AND estado = 1 LIMIT 20");
     while ($row = mysqli_fetch_assoc($cliente)) {
         $data['id'] = intval($row['idcliente']);
         $data['label'] = $row['nombre'];
+        $data['dni'] = $row['dni'];
         $data['direccion'] = $row['direccion'];
         $data['telefono'] = $row['telefono'];
         $data['obrasocial'] = $row['obrasocial'];
@@ -229,6 +230,88 @@ if (isset($_GET['q'])) {
 
             if (!$insedsd) {
                 throw new Exception("Error al insertar graduaciones: " . mysqli_error($conexion));
+            }
+        }
+
+        // Crear historia clínica automáticamente desde la venta
+        if (mysqli_num_rows($consultaDetalle2) > 0) {
+            // Obtener productos de la venta para observaciones
+            $productos_desc = array();
+            mysqli_data_seek($consultaDetalle, 0);
+            while ($row_prod = mysqli_fetch_assoc($consultaDetalle)) {
+                $prod_id = intval($row_prod['id_producto']);
+                $prod_query = mysqli_query($conexion, "SELECT descripcion FROM producto WHERE codproducto = $prod_id");
+                $prod_data = mysqli_fetch_assoc($prod_query);
+                if ($prod_data) {
+                    $productos_desc[] = $prod_data['descripcion'];
+                }
+            }
+            
+            // Obtener graduaciones para historia clínica
+            mysqli_data_seek($consultaDetalle2, 0);
+            $grad_data = mysqli_fetch_assoc($consultaDetalle2);
+            
+            // Tipo de lente según productos y adición
+            $tipo_lente = 'Simples';
+            
+            // Verificar si algún producto tiene "multifocales" en la descripción
+            $tiene_multifocales = false;
+            $tiene_bifocales = false;
+            mysqli_data_seek($consultaDetalle, 0);
+            while ($row_prod = mysqli_fetch_assoc($consultaDetalle)) {
+                $prod_id = intval($row_prod['id_producto']);
+                $prod_query = mysqli_query($conexion, "SELECT descripcion FROM producto WHERE codproducto = $prod_id");
+                $prod_data = mysqli_fetch_assoc($prod_query);
+                if ($prod_data) {
+                    $desc_lower = strtolower($prod_data['descripcion']);
+                    if (strpos($desc_lower, 'multifocal') !== false) {
+                        $tiene_multifocales = true;
+                    }
+                    if (strpos($desc_lower, 'bifocal') !== false || strpos($desc_lower, 'bifocales') !== false) {
+                        $tiene_bifocales = true;
+                    }
+                }
+            }
+            
+            // Determinar tipo de lente
+            if ($tiene_multifocales) {
+                $tipo_lente = 'Multifocales';
+            } else if ($tiene_bifocales || !empty($grad_data['addg'])) {
+                $tipo_lente = 'Bifocales';
+            }
+            
+            // Observaciones con productos
+            $observaciones = 'Productos: ' . implode(', ', $productos_desc);
+            if (!empty($grad_data['obs'])) {
+                $observaciones .= ' | ' . $grad_data['obs'];
+            }
+            
+            // Usar graduaciones de lejos (od_l y oi_l) para historia clínica
+            $od_esfera = !empty($grad_data['od_l_1']) ? $grad_data['od_l_1'] : $grad_data['od_c_1'];
+            $od_cilindro = !empty($grad_data['od_l_2']) ? $grad_data['od_l_2'] : $grad_data['od_c_2'];
+            $od_eje = !empty($grad_data['od_l_3']) ? $grad_data['od_l_3'] : $grad_data['od_c_3'];
+            
+            $oi_esfera = !empty($grad_data['oi_l_1']) ? $grad_data['oi_l_1'] : $grad_data['oi_c_1'];
+            $oi_cilindro = !empty($grad_data['oi_l_2']) ? $grad_data['oi_l_2'] : $grad_data['oi_c_2'];
+            $oi_eje = !empty($grad_data['oi_l_3']) ? $grad_data['oi_l_3'] : $grad_data['oi_c_3'];
+            
+            // Insertar historia clínica
+            $insert_historia = "INSERT INTO historia_clinica (
+                id_cliente, tipo_consulta, tipo_lente,
+                nue_od_esfera, nue_od_cilindro, nue_od_eje,
+                nue_oi_esfera, nue_oi_cilindro, nue_oi_eje, nue_adicion,
+                observaciones, id_usuario
+            ) VALUES (
+                $id_cliente, 'Venta', '$tipo_lente',
+                '$od_esfera', '$od_cilindro', '$od_eje',
+                '$oi_esfera', '$oi_cilindro', '$oi_eje', '{$grad_data['addg']}',
+                '$observaciones', $id_user
+            )";
+            
+            $result_hist = mysqli_query($conexion, $insert_historia);
+            if (!$result_hist) {
+                // No lanzar error, solo registrar en logs si es necesario
+                error_log("Error al crear historia clínica: " . mysqli_error($conexion));
             }
         }
 
