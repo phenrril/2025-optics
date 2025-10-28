@@ -3,7 +3,7 @@
     $host = getenv('DB_HOST') ?: "127.0.0.1";
     $user = getenv('DB_USER') ?: "u375391241_opticaojito";
     $clave = getenv('DB_PASSWORD') ?: "Optica2024";
-    $bd = getenv('DB_NAME') ?: "u375391241_sis_ventas";
+    $bd = getenv('DB_NAME') ?: "c2880275_ventas";
     
     // En Docker no usamos puerto, MySQL está en el puerto por defecto
     $port = getenv('DB_PORT') ?: "3306";

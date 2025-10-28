@@ -6,7 +6,6 @@
 -- Fecha: 2025
 -- =====================================================
 
-USE u375391241_sis_ventas;
 
 -- Agregar columna 'costo' a la tabla producto
 ALTER TABLE producto ADD COLUMN costo TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Indica si el producto es un costo directo (1=SI, 0=NO)';
