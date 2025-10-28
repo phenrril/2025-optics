@@ -52,7 +52,8 @@ if (!empty($_POST)) {
                 El código ya existe
             </div>';
         } else {
-            $query_insert = mysqli_query($conexion, "INSERT INTO producto(codigo, descripcion, marca, precio, existencia, usuario_id, precio_bruto) VALUES ('$codigo', '$producto', '$marca', '$precio', '$cantidad', '$usuario_id', '$precio_bruto')");
+            $costo = isset($_POST['costo']) ? 1 : 0;
+            $query_insert = mysqli_query($conexion, "INSERT INTO producto(codigo, descripcion, marca, precio, existencia, usuario_id, precio_bruto, costo) VALUES ('$codigo', '$producto', '$marca', '$precio', '$cantidad', '$usuario_id', '$precio_bruto', '$costo')");
             
             if ($query_insert) {
                 $alert = '<div class="alert alert-success" role="alert">
@@ -218,6 +219,7 @@ if (!empty($_POST)) {
                 <th>Stock</th>
                 <th>Estado</th>
                 <th>Precio Bruto</th>
+                <th>Costo</th>
                 <th></th>
             </tr>
         </thead>
@@ -246,6 +248,13 @@ if (!empty($_POST)) {
                             $stock_class = 'text-success';
                             $stock_icon = '<i class="fas fa-check-circle mr-1"></i>';
                         }
+                        
+                        // Indicador de costo
+                        if (isset($data['costo']) && $data['costo'] == 1) {
+                            $costo_badge = '<span class="badge badge-custom badge-info"><i class="fas fa-check mr-1"></i>Costo</span>';
+                        } else {
+                            $costo_badge = '<span class="badge badge-custom badge-secondary"><i class="fas fa-times mr-1"></i>No</span>';
+                        }
                 ?>
                 <tr>
                     <td><?php echo $data['codproducto']; ?></td>
@@ -256,6 +265,7 @@ if (!empty($_POST)) {
                     <td><span class="<?php echo $stock_class; ?>"><?php echo $stock_icon; ?><?php echo $data['existencia']; ?></span></td>
                     <td><?php echo $estado; ?></td>
                     <td><?php echo number_format($data['precio_bruto'], 2); ?></td>
+                    <td><?php echo $costo_badge; ?></td>
                     <td>
                         <div class="btn-group" role="group">
                             <?php if ($data['estado'] == 1) { ?>
@@ -283,7 +293,7 @@ if (!empty($_POST)) {
             <?php }
             } else { ?>
                 <tr>
-                    <td colspan="9" class="text-center py-4">
+                    <td colspan="10" class="text-center py-4">
                         <i class="fas fa-box-open fa-3x text-muted mb-3 d-block"></i>
                         <p class="text-muted">No hay productos registrados</p>
                     </td>
@@ -347,6 +357,18 @@ if (!empty($_POST)) {
                             <div class="form-group">
                                 <label for="precio_bruto">Precio de Compra *</label>
                                 <input type="number" step="0.01" placeholder="0.00" class="form-control" name="precio_bruto" id="precio_bruto" min="0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" name="costo" id="costo" value="1">
+                                    <label class="form-check-label" for="costo">
+                                        <i class="fas fa-tag mr-2"></i> Marcar como producto de costo
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
