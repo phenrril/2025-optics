@@ -15,30 +15,235 @@ if (empty($existe) && $id_user != 1) {
     exit();
 }
 include_once "includes/header.php";
-$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente where id_usuario =$id_user");
+$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente where id_usuario =$id_user ORDER BY v.id DESC");
+$total_ventas = mysqli_num_rows($query);
+$query_all = mysqli_query($conexion, "SELECT SUM(total) as total_general FROM ventas WHERE id_usuario = $id_user");
+$total_general = mysqli_fetch_assoc($query_all);
 ?>
-<table class="table table-light" id="tbl">
-    <thead class="thead-dark">
-        <tr>
-            <th>#</th>
-            <th>Cliente</th>
-            <th>Total</th>
-            <th>Fecha</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php while ($row = mysqli_fetch_assoc($query)) { ?>
-            <tr>
-                <td><?php echo $row['id']; ?></td>
-                <td><?php echo $row['nombre']; ?></td>
-                <td><?php echo $row['total']; ?></td>
-                <td><?php echo $row['fecha']; ?></td>
-                <td>
-                    <a href="pdf/generar.php?cl=<?php echo $row['id_cliente'] ?>&v=<?php echo $row['id'] ?>" target="_blank" class="btn btn-danger"><i class="fas fa-file-pdf"></i></a>
-                </td>
-            </tr>
-        <?php } ?>
-    </tbody>
-</table>
+
+<style>
+/* Estilos modernos para lista de ventas */
+.ventas-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.page-header h2 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 2rem;
+}
+
+.stats-box {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px 25px;
+    border-radius: 10px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.stats-box h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.stats-box p {
+    margin: 5px 0 0 0;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.card-modern {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+
+.card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.card-body-modern {
+    padding: 0;
+}
+
+.table-modern {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-modern thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding: 15px;
+    border: none;
+}
+
+.table-modern tbody tr {
+    transition: all 0.3s;
+}
+
+.table-modern tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.table-modern tbody td {
+    padding: 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.btn-action-pdf {
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: none;
+    transition: all 0.3s;
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    color: white;
+    font-weight: 600;
+}
+
+.btn-action-pdf:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(235, 51, 73, 0.4);
+    color: white;
+}
+
+.empty-state {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 20px;
+}
+
+.fade-in-container {
+    animation: fadeIn 0.6s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+    
+    .stats-box {
+        width: 100%;
+    }
+}
+</style>
+
+<div class="ventas-container fade-in-container">
+    <!-- Encabezado -->
+    <div class="page-header">
+        <div>
+            <h2><i class="fas fa-receipt mr-2"></i> Lista de Ventas</h2>
+            <p class="mb-0 mt-2"><i class="fas fa-calendar-alt mr-1"></i> Historial de ventas realizadas</p>
+        </div>
+        <div>
+            <div class="stats-box">
+                <h3><i class="fas fa-chart-line mr-2"></i> <?php echo $total_ventas; ?></h3>
+                <p>Total de Ventas</p>
+            </div>
+            <?php if ($total_general['total_general']) { ?>
+            <div class="stats-box mt-2">
+                <h3><i class="fas fa-dollar-sign mr-2"></i> $<?php echo number_format($total_general['total_general'], 2); ?></h3>
+                <p>Total General</p>
+            </div>
+            <?php } ?>
+        </div>
+    </div>
+
+    <!-- Tabla de Ventas -->
+    <div class="card-modern">
+        <div class="card-body-modern">
+            <div class="table-responsive">
+                <table class="table table-modern" id="tbl">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-hashtag mr-1"></i> ID</th>
+                            <th><i class="fas fa-user mr-1"></i> Cliente</th>
+                            <th><i class="fas fa-dollar-sign mr-1"></i> Total</th>
+                            <th><i class="fas fa-calendar mr-1"></i> Fecha</th>
+                            <th><i class="fas fa-file-pdf mr-1"></i> Recibo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        $query_data = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente where v.id_usuario = $id_user ORDER BY v.id DESC");
+                        if (mysqli_num_rows($query_data) > 0) {
+                            while ($row = mysqli_fetch_assoc($query_data)) { 
+                                // Formatear fecha
+                                $fecha = date('d/m/Y H:i', strtotime($row['fecha']));
+                        ?>
+                            <tr>
+                                <td><strong>#<?php echo htmlspecialchars($row['id']); ?></strong></td>
+                                <td><i class="fas fa-user-circle text-primary mr-2"></i><?php echo htmlspecialchars($row['nombre']); ?></td>
+                                <td><strong class="text-success">$<?php echo number_format($row['total'], 2); ?></strong></td>
+                                <td><i class="far fa-clock text-info mr-1"></i><?php echo $fecha; ?></td>
+                                <td>
+                                    <a href="pdf/generar.php?cl=<?php echo $row['id_cliente']; ?>&v=<?php echo $row['id']; ?>" 
+                                       target="_blank" 
+                                       class="btn btn-action-pdf btn-sm"
+                                       title="Ver/Descargar PDF">
+                                        <i class="fas fa-file-pdf mr-1"></i> Ver PDF
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php } 
+                        } else { ?>
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    <i class="fas fa-receipt"></i>
+                                    <h5 class="mt-3 mb-2">No hay ventas registradas</h5>
+                                    <p class="text-muted">Las ventas que realices aparecerán aquí</p>
+                                </td>
+                            </tr>
+                        <?php } ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php include_once "includes/footer.php"; ?>

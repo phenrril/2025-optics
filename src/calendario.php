@@ -14,173 +14,327 @@ if (empty($existe) && $id_user != 1) {
     header("Location: permisos.php");
     exit();
 }
-include_once "includes/header.php"; ?>
+include_once "includes/header.php"; 
+?>
 
-<head>
+<style>
+/* Estilos modernos para calendario */
+.calendario-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
 
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous"> 
-    <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js'></script>
-</head>
-<br>
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
 
-<div class="container is-fluid">
-    <div class="col-xs-12">
-        <h2 align="center">Calendario de Ventas, Ingresos y Egresos</h2>
-        <br><br>
-        <div class="card">
-        <div>
-            <style>
-                th {
-                    font-weight: bold;
-                    color: white;
-                }
-            </style>
+.page-header h2 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 2rem;
+}
+
+.card-modern {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+
+.card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.card-header-modern {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    padding: 20px 25px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    border: none;
+}
+
+.card-body-modern {
+    padding: 25px;
+}
+
+.form-control-modern {
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 12px 15px;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+}
+
+.form-control-modern:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    outline: none;
+}
+
+.btn-modern {
+    border-radius: 10px;
+    padding: 12px 30px;
+    font-weight: 600;
+    transition: all 0.3s;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-modern-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-modern-primary:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #6a4190 100%);
+    color: white;
+}
+
+.select-modern {
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 12px 15px;
+    font-size: 0.95rem;
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: #fff;
+}
+
+.select-modern:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    outline: none;
+}
+
+.table-modern {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table-modern thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    padding: 15px;
+    border: none;
+}
+
+.table-modern tbody tr {
+    transition: all 0.3s;
+}
+
+.table-modern tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+}
+
+.table-modern tbody td {
+    padding: 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.fade-in-container {
+    animation: fadeIn 0.6s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+<div class="calendario-container fade-in-container">
+    <!-- Encabezado -->
+    <div class="page-header text-center">
+        <h2><i class="fas fa-calendar-alt mr-2"></i> Calendario de Ventas, Ingresos y Egresos</h2>
+        <p class="mb-0 mt-2"><i class="fas fa-info-circle mr-1"></i> Gestión de movimientos financieros y ventas por período</p>
+    </div>
+    <!-- Formulario Ingresos y Egresos -->
+    <div class="card card-modern">
+        <div class="card-header-modern">
+            <i class="fas fa-money-check-alt mr-2"></i> Ingresos y Egresos
+        </div>
+        <div class="card-body card-body-modern">
             <form method="POST" id="form_saldos" name="form_saldos">
-                <div class="row justify-content-center">
-                    <div class="col-md-6 text-center"><br>
-                        <div class="card">
-                            <div class="card-header">
-                                Ingresos y Egresos
-                            </div>
-                            <div class="card-body">
-                                <div class="form-group">
-                                    <input id="valor" class="form-control" type="number" name="valor" placeholder="Ingresá el valor">
-                                </div>
-                                
-                                <div class="form-group">
-                                <td colspan=3>Tipo: </td>
-                                        <select id="tipo" name="tipo">
-                                        <option value="ingreso">Ingreso</option>
-                                        <option value="egreso">Egreso</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <td colspan=3>Descripción:  </td>
-                                        <select id="descripcion" name="descripcion">
-                                            <option value="ingreso capital">Ingreso de capital</option>
-                                            <option value="ingresos varios">ingresos varios</option>
-                                            <option value="pago proveedores">pago a proveedores</option>
-                                            <option value="pago cristales">pago de cristales</option>
-                                            <option value="pago de gastos">pago de gastos</option>
-                                            <option value="pago de sueldo">pago de sueldo</option>
-                                            <option value="pago de alquiler">pago de alquiler</option>
-                                            <option value="pago de luz">pago de luz</option>
-                                            <option value="pago de agua">pago de agua</option>
-                                            <option value="pago de gas">pago de gas</option>
-                                            <option value="pago de internet">pago de internet</option>
-                                            <option value="pago de telefono">pago de telefono</option>
-                                            <option value="pago de impuestos">pago de impuestos</option>
-                                            <option value="pago de seguro">pago de seguro</option>
-                                            <option value="pago de publicidad">pago de publicidad</option>
-                                            <option value="otros">otros</option>
-                                        </select>
-                                </div>
-                                <div class="row justify-content-center">
-                                    <input type="button" class="btn btn-primary" value="Agregar Saldo" id="agregar_saldos" name="agregar_saldos"></input>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> 
-            </form>
-            <div id="div_saldos"></div>
-            <br>
-            <br><br>
-
-            
-                
-                
-            <form action="" method="GET">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="form-group">
-                            <label><b>Del Dia</b></label>
-                            <input type="date" name="from_date" value="<?php if (isset($_GET['from_date'])) {
-                                                                            echo $_GET['from_date'];
-                                                                        } ?>" class="form-control">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group">
-                            <label><b> Hasta el Dia</b></label>
-                            
-                            <input type="date" name="to_date" value="<?php if (isset($_GET['to_date'])) {
-                                                                            echo $_GET['to_date'];
-                                                                        } ?>" class="form-control">
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label><b> Usuario</b></label>
-                            <select name="user" class="form-control">
-                                        <option value="1">Nati</option>
-                                        <option value="8">Sol</option>
-                            </select>
+                            <label><i class="fas fa-dollar-sign mr-2 text-success"></i> Valor *</label>
+                            <input id="valor" name="valor" class="form-control form-control-modern" type="number" step="0.01" min="0" placeholder="Ingresá el valor" required>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <div class="col-md-6">
-                            <label><b></b></label> <br>
-                            <button type="submit" class="btn btn-primary">Buscar</button>
-                            </div>
+                            <label><i class="fas fa-exchange-alt mr-2 text-primary"></i> Tipo *</label>
+                            <select id="tipo" name="tipo" class="form-control select-modern" required>
+                                <option value="ingreso">Ingreso</option>
+                                <option value="egreso">Egreso</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-                <br>
+                <div class="form-group">
+                    <label><i class="fas fa-file-alt mr-2 text-info"></i> Descripción *</label>
+                    <select id="descripcion" name="descripcion" class="form-control select-modern" required>
+                        <option value="ingreso capital">Ingreso de capital</option>
+                        <option value="ingresos varios">Ingresos varios</option>
+                        <option value="pago proveedores">Pago a proveedores</option>
+                        <option value="pago cristales">Pago de cristales</option>
+                        <option value="pago de gastos">Pago de gastos</option>
+                        <option value="pago de sueldo">Pago de sueldo</option>
+                        <option value="pago de alquiler">Pago de alquiler</option>
+                        <option value="pago de luz">Pago de luz</option>
+                        <option value="pago de agua">Pago de agua</option>
+                        <option value="pago de gas">Pago de gas</option>
+                        <option value="pago de internet">Pago de internet</option>
+                        <option value="pago de telefono">Pago de teléfono</option>
+                        <option value="pago de impuestos">Pago de impuestos</option>
+                        <option value="pago de seguro">Pago de seguro</option>
+                        <option value="pago de publicidad">Pago de publicidad</option>
+                        <option value="otros">Otros</option>
+                    </select>
+                </div>
+                <div class="text-center">
+                    <button type="button" class="btn btn-modern btn-modern-primary" id="agregar_saldos" name="agregar_saldos">
+                        <i class="fas fa-plus mr-2"></i> Agregar Saldo
+                    </button>
+                </div>
             </form>
-            <table class="table table-striped" id="table_id">
-                <thead>
-                    <tr class="bg-dark">
-                        <th>ID Venta</th>
-                        <th>Nombre Cliente</th>
-                        <th>Total</th>
-                        <th>Abonó</th>
-                        <th>Restan</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    $conexion = mysqli_connect("localhost", "root", "", "sis_venta");
-                    if (isset($_GET['from_date']) && isset($_GET['to_date'])) {
-                        $user = $_GET['user'];
-                        $from_date = $_GET['from_date'];
-                        $to_date = $_GET['to_date'];
-                        //$query = "SELECT * FROM ventas WHERE fecha BETWEEN '$from_date' AND '$to_date'";
-                        $query = "SELECT ventas.*, cliente.nombre FROM ventas
-                        JOIN cliente ON ventas.id_cliente = cliente.idcliente
-                        WHERE id_usuario = '$user' and ventas.fecha BETWEEN '$from_date' AND '$to_date'";
-                        $query_run = mysqli_query($conexion, $query);
-                        if (mysqli_num_rows($query_run) > 0) {
-                            foreach ($query_run as $fila) {
-                    ?>
-                                <tr>
-                                    <td><?php echo $fila['id']; ?></td>
-                                    <td><?php echo $fila['nombre']; ?></td>
-                                    <td><?php echo $fila['total']; ?></td>
-                                    <td><?php echo $fila['abona']; ?></td>
-                                    <td><?php echo $fila['resto']; ?></td>
-                                    <td><?php echo $fila['fecha']; ?></td>
-                                </tr>
-                            <?php
-                            }
-                        } else {
-                            ?>
-                            <tr>
-                                <td><?php echo "No se encontraron resultados"; ?></td>
-                        <?php
-                        
-                        }
-                    }
-                        ?>
-                        </tr>
-                </tbody>
-            </table>
+            <div id="div_saldos" class="mt-3"></div>
         </div>
-
     </div>
-</div>
+
+    <!-- Formulario de Búsqueda -->
+    <div class="card card-modern">
+        <div class="card-header-modern">
+            <i class="fas fa-search mr-2"></i> Buscar Ventas por Período
+        </div>
+        <div class="card-body card-body-modern">
+            <form action="" method="GET">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label><i class="far fa-calendar-check mr-2 text-primary"></i>Desde el Día *</label>
+                            <input type="date" name="from_date" value="<?php echo isset($_GET['from_date']) ? $_GET['from_date'] : ''; ?>" class="form-control form-control-modern" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label><i class="far fa-calendar-times mr-2 text-danger"></i>Hasta el Día *</label>
+                            <input type="date" name="to_date" value="<?php echo isset($_GET['to_date']) ? $_GET['to_date'] : ''; ?>" class="form-control form-control-modern" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label><i class="fas fa-user mr-2 text-info"></i> Usuario *</label>
+                            <select name="user" class="form-control select-modern" required>
+                                <option value="1">Nati</option>
+                                <option value="8">Sol</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-modern btn-modern-primary">
+                        <i class="fas fa-search mr-2"></i> Buscar Ventas
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resultados de Búsqueda -->
+    <?php if (isset($_GET['from_date']) && isset($_GET['to_date']) && !empty($_GET['from_date']) && !empty($_GET['to_date'])) { 
+        // Validar que la conexión esté disponible
+        if (!isset($conexion) || is_null($conexion)) {
+            die("Error: La conexión a la base de datos no está disponible.");
+        }
+        
+        $user = mysqli_real_escape_string($conexion, $_GET['user']);
+        $from_date = mysqli_real_escape_string($conexion, $_GET['from_date']);
+        $to_date = mysqli_real_escape_string($conexion, $_GET['to_date']);
+        
+        $query = "SELECT ventas.*, cliente.nombre FROM ventas
+                  JOIN cliente ON ventas.id_cliente = cliente.idcliente
+                  WHERE ventas.id_usuario = '$user' AND ventas.fecha BETWEEN '$from_date' AND '$to_date'";
+        $query_run = mysqli_query($conexion, $query);
+        
+        if (!$query_run) {
+            die("Error en la consulta: " . mysqli_error($conexion));
+        }
+    ?>
+        <div class="card card-modern">
+            <div class="card-header-modern">
+                <i class="fas fa-receipt mr-2"></i> Resultados de Búsqueda
+            </div>
+            <div class="card-body-modern p-0">
+                <div class="table-responsive">
+                    <table class="table table-modern">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-hashtag mr-1"></i> ID Venta</th>
+                                <th><i class="fas fa-user mr-1"></i> Nombre Cliente</th>
+                                <th><i class="fas fa-dollar-sign mr-1"></i> Total</th>
+                                <th><i class="fas fa-money-bill-wave mr-1"></i> Abonó</th>
+                                <th><i class="fas fa-balance-scale mr-1"></i> Restante</th>
+                                <th><i class="fas fa-calendar mr-1"></i> Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (mysqli_num_rows($query_run) > 0) {
+                                foreach ($query_run as $fila) { ?>
+                                    <tr>
+                                        <td><strong>#<?php echo htmlspecialchars($fila['id']); ?></strong></td>
+                                        <td><i class="fas fa-user-circle text-primary mr-2"></i><?php echo htmlspecialchars($fila['nombre']); ?></td>
+                                        <td><strong class="text-success">$<?php echo number_format($fila['total'], 2); ?></strong></td>
+                                        <td><i class="fas fa-check-circle text-success mr-1"></i>$<?php echo number_format($fila['abona'], 2); ?></td>
+                                        <td><i class="fas fa-clock text-warning mr-1"></i>$<?php echo number_format($fila['resto'], 2); ?></td>
+                                        <td><i class="far fa-calendar text-info mr-1"></i><?php echo date('d/m/Y', strtotime($fila['fecha'])); ?></td>
+                                    </tr>
+                            <?php }
+                            } else { ?>
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <i class="fas fa-search fa-3x text-muted mb-3 d-block"></i>
+                                        <p class="text-muted">No se encontraron resultados para este período</p>
+                                    </td>
+                                </tr>
+                            <?php } ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    <?php } ?>
 </div>
 <script>      
 $('#agregar_saldos').click(function () {

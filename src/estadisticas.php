@@ -26,104 +26,220 @@ $totalP = mysqli_num_rows($productos);
 $ventas = mysqli_query($conexion, "SELECT * FROM ventas");
 $totalV = mysqli_num_rows($ventas);
 ?>
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray" style="color: white;">Panel de Estadísticas</h1>
+
+<style>
+/* Estilos modernos para estadísticas */
+.estadisticas-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.page-header h2 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 2rem;
+}
+
+.stats-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s;
+    margin-bottom: 25px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+    display: block;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+    color: inherit;
+}
+
+.stats-card-header {
+    padding: 20px 25px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stats-card-body {
+    padding: 25px;
+}
+
+.stats-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stats-card-body {
+    position: relative;
+}
+
+.stats-icon {
+    font-size: 3rem;
+    opacity: 0.3;
+    position: absolute;
+}
+
+.chart-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 25px;
+    overflow: hidden;
+}
+
+.chart-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 25px;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.chart-body {
+    padding: 25px;
+    background: #fff;
+}
+
+.fade-in-container {
+    animation: fadeIn 0.6s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .page-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .stats-value {
+        font-size: 2rem;
+    }
+}
+</style>
+
+<div class="estadisticas-container fade-in-container">
+    <!-- Encabezado -->
+    <div class="page-header">
+        <h2><i class="fas fa-chart-line mr-2"></i> Panel de Estadísticas</h2>
+        <p class="mb-0 mt-2"><i class="fas fa-info-circle mr-1"></i> Resumen general del sistema</p>
     </div>
 
-    <!-- Content Row -->
+    <!-- Tarjetas de Estadísticas -->
     <div class="row">
-        <a class="col-xl-3 col-md-6 mb-4" href="usuarios.php">
-            <div class="card border-left-primary shadow h-100 py-2 bg-warning">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-white text-uppercase mb-1">Usuarios</div>
-                            <div class="h5 mb-0 font-weight-bold text-white"><?php echo $totalU; ?></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user fa-2x text-gray-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <a href="usuarios.php" class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="stats-card-header text-white">
+                    <i class="fas fa-user mr-2"></i> Usuarios
+                </div>
+                <div class="stats-card-body text-white text-center">
+                    <div class="stats-value"><?php echo $totalU; ?></div>
+                    <p class="mb-0 mt-2 opacity-75"><small>Usuarios registrados</small></p>
+                    <div class="stats-icon" style="right: 20px; bottom: 20px;">
+                        <i class="fas fa-users"></i>
                     </div>
                 </div>
-            </div>
-        </a>
+            </a>
+        </div>
 
-        <!-- Earnings (Monthly) Card Example -->
-        <a class="col-xl-3 col-md-6 mb-4" href="clientes.php">
-            <div class="card border-left-success shadow h-100 py-2 bg-success">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-white text-uppercase mb-1">Clientes</div>
-                            <div class="h5 mb-0 font-weight-bold text-white"><?php echo $totalC; ?></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-users fa-2x text-gray-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <a href="clientes.php" class="stats-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="stats-card-header text-white">
+                    <i class="fas fa-users mr-2"></i> Clientes
+                </div>
+                <div class="stats-card-body text-white text-center">
+                    <div class="stats-value"><?php echo $totalC; ?></div>
+                    <p class="mb-0 mt-2 opacity-75"><small>Clientes registrados</small></p>
+                    <div class="stats-icon" style="right: 20px; bottom: 20px;">
+                        <i class="fas fa-user-friends"></i>
                     </div>
                 </div>
-            </div>
-        </a>
+            </a>
+        </div>
 
-        <!-- Earnings (Monthly) Card Example -->
-        <a class="col-xl-3 col-md-6 mb-4" href="productos.php">
-            <div class="card border-left-info shadow h-100 py-2 bg-primary">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-white text-uppercase mb-1">Productos</div>
-                            <div class="row no-gutters align-items-center">
-                                <div class="col-auto">
-                                    <div class="h5 mb-0 mr-3 font-weight-bold text-white"><?php echo $totalP; ?></div>
-                                </div>
-                                <div class="col">
-                                    <div class="progress progress-sm mr-2">
-                                        <div class="progress-bar bg-danger" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <a href="productos.php" class="stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="stats-card-header text-white">
+                    <i class="fas fa-box mr-2"></i> Productos
+                </div>
+                <div class="stats-card-body text-white text-center">
+                    <div class="stats-value"><?php echo $totalP; ?></div>
+                    <p class="mb-0 mt-2 opacity-75"><small>Con stock disponible</small></p>
+                    <div class="stats-icon" style="right: 20px; bottom: 20px;">
+                        <i class="fas fa-clipboard-list"></i>
                     </div>
                 </div>
-            </div>
-        </a>
+            </a>
+        </div>
 
-        <!-- Pending Requests Card Example -->
-        <a class="col-xl-3 col-md-6 mb-4" href="ventas.php">
-            <div class="card border-left-warning bg-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-white text-uppercase mb-1">Ventas</div>
-                            <div class="h5 mb-0 font-weight-bold text-white"><?php echo $totalV; ?></div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-dollar-sign fa-2x text-white-300"></i>
-                        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <a href="ventas.php" class="stats-card" style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">
+                <div class="stats-card-header text-white">
+                    <i class="fas fa-shopping-cart mr-2"></i> Ventas
+                </div>
+                <div class="stats-card-body text-white text-center">
+                    <div class="stats-value"><?php echo $totalV; ?></div>
+                    <p class="mb-0 mt-2 opacity-75"><small>Ventas realizadas</small></p>
+                    <div class="stats-icon" style="right: 20px; bottom: 20px;">
+                        <i class="fas fa-dollar-sign"></i>
                     </div>
                 </div>
-            </div>
-        </a>
-        <div class="col-lg-6">
-            <div class="au-card m-b-30">
-                <div class="au-card-inner">
-                    <h3 class="title-2 m-b-40" >Productos con stock mínimo</h3><br><br><br><br>
+            </a>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="fas fa-chart-area mr-2"></i> Productos con Stock Mínimo
+                </div>
+                <div class="chart-body">
                     <canvas id="myChart"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
-            <div class="au-card m-b-30">
-                <div class="au-card-inner">
-                    <h3 class="title-2 m-b-40">Productos más vendidos</h3><br><br><br><br>
+
+        <div class="col-lg-6 mb-4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <i class="fas fa-chart-pie mr-2"></i> Productos Más Vendidos
+                </div>
+                <div class="chart-body">
                     <canvas id="pieChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
 <?php include_once "includes/footer.php"; 
 
