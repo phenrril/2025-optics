@@ -44,6 +44,7 @@
                         <a class="nav-link" href="ventas.php"><div class="sb-nav-link-icon"><i class="fas fa-shopping-cart"></i></div> Nueva venta</a>
                         <a class="nav-link" href="idcristal.php"><div class="sb-nav-link-icon"><i class="fas fa-glasses"></i></div> Id crist - PP - Anular</a>
                         <a class="nav-link" href="clientes.php"><div class="sb-nav-link-icon"><i class="fas fa-users"></i></div> Clientes</a>
+                        <a class="nav-link" href="historia_clinica.php"><div class="sb-nav-link-icon"><i class="fas fa-clipboard-list"></i></div> Historia Clínica</a>
                         <a class="nav-link" href="lista_ventas.php"><div class="sb-nav-link-icon"><i class="fas fa-shopping-cart"></i></div> Ventas</a>
                         <a class="nav-link" href="estadisticas.php"><div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div> Estadisticas</a>
                         <a class="nav-link" href="calendario.php"><div class="sb-nav-link-icon"><i class="fas fa-calendar"></i></div> Calendario</a>
