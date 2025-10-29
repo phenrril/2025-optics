@@ -6,6 +6,13 @@ if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
     exit();
 }
 $id_user = $_SESSION['idUser'];
+
+// Validar conexión primero
+if (!$conexion || !is_object($conexion)) {
+    echo "<div class='alert alert-danger'>Error de conexión a la base de datos</div>";
+    exit();
+}
+
 $permiso = "ventas";
 $permiso_escaped = mysqli_real_escape_string($conexion, $permiso);
 $sql = mysqli_query($conexion, "SELECT p.*, d.* FROM permisos p INNER JOIN detalle_permisos d ON p.id = d.id_permiso WHERE d.id_usuario = $id_user AND p.nombre = '$permiso_escaped'");
@@ -15,10 +22,33 @@ if (empty($existe) && $id_user != 1) {
     exit();
 }
 include_once "includes/header.php";
-$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente where id_usuario =$id_user ORDER BY v.id DESC");
-$total_ventas = mysqli_num_rows($query);
+
+// Sanitizar ID de usuario
+$id_user = (int) $id_user;
+
+// Consulta para contar total de ventas
+$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente WHERE v.id_usuario = $id_user ORDER BY v.id DESC");
+if ($query === false) {
+    $error_msg = "Error en consulta de ventas: " . mysqli_error($conexion);
+    error_log($error_msg);
+    echo "<div class='alert alert-danger'>$error_msg</div>";
+    $total_ventas = 0;
+} else {
+    $total_ventas = mysqli_num_rows($query);
+}
+
+// Consulta para total general
 $query_all = mysqli_query($conexion, "SELECT SUM(total) as total_general FROM ventas WHERE id_usuario = $id_user");
-$total_general = mysqli_fetch_assoc($query_all);
+if ($query_all === false) {
+    $error_msg = "Error en consulta de total general: " . mysqli_error($conexion);
+    error_log($error_msg);
+    $total_general = array('total_general' => 0);
+} else {
+    $total_general = mysqli_fetch_assoc($query_all);
+    if (!$total_general || $total_general['total_general'] === null) {
+        $total_general = array('total_general' => 0);
+    }
+}
 ?>
 
 <style>
@@ -209,8 +239,21 @@ $total_general = mysqli_fetch_assoc($query_all);
                     </thead>
                     <tbody>
                         <?php 
-                        $query_data = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente where v.id_usuario = $id_user ORDER BY v.id DESC");
-                        if (mysqli_num_rows($query_data) > 0) {
+                        // Consulta para obtener las ventas (reutilizar si es posible)
+                        if (isset($query) && $query !== false) {
+                            // Reiniciar el puntero del resultado para poder iterarlo de nuevo
+                            mysqli_data_seek($query, 0);
+                            $query_data = $query;
+                        } else {
+                            // Si la consulta anterior falló, intentar de nuevo
+                            $query_data = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente WHERE v.id_usuario = $id_user ORDER BY v.id DESC");
+                        }
+                        
+                        if ($query_data === false) {
+                            $error_msg = "Error al obtener ventas: " . mysqli_error($conexion);
+                            error_log($error_msg);
+                            echo "<tr><td colspan='5' class='alert alert-danger'>$error_msg</td></tr>";
+                        } elseif (mysqli_num_rows($query_data) > 0) {
                             while ($row = mysqli_fetch_assoc($query_data)) { 
                                 // Formatear fecha
                                 $fecha = date('d/m/Y H:i', strtotime($row['fecha']));
