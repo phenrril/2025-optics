@@ -4,20 +4,8 @@
  * Este script puede ejecutarse una vez para actualizar productos existentes
  */
 
-// Configuración de base de datos
-$host = getenv('DB_HOST') ?: "localhost";
-$user = getenv('DB_USER') ?: "c2880275_ventas";
-$clave = getenv('DB_PASSWORD') ?: "wego76FIfe";
-$bd = getenv('DB_NAME') ?: "c2880275_ventas";
-$port = getenv('DB_PORT') ?: "3306";
-$host_with_port = $host . ':' . $port;
-
-$conexion = mysqli_connect($host_with_port, $user, $clave, $bd);
-if (mysqli_connect_errno()) {
-    die("Error de conexión a la base de datos: " . mysqli_connect_error() . "\n");
-}
-mysqli_select_db($conexion, $bd) or die("Error: No se encuentra la base de datos\n");
-mysqli_set_charset($conexion, "utf8");
+// Usar la conexión centralizada
+require_once "../conexion.php";
 
 // Detectar si se llama desde web (AJAX) o desde terminal
 $is_web = isset($_SERVER['HTTP_X_REQUESTED_WITH']) || isset($_POST) || php_sapi_name() !== 'cli';
@@ -93,5 +81,8 @@ if ($query) {
     }
 }
 
-mysqli_close($conexion);
+// La conexión será cerrada automáticamente al final del script o puede cerrarse manualmente si es necesario
+if (isset($conexion)) {
+    mysqli_close($conexion);
+}
 

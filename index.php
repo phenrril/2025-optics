@@ -13,23 +13,44 @@ if (!empty($_SESSION['active'])) {
             </div>';
         } else {
             require_once "conexion.php";
-            $user = mysqli_real_escape_string($conexion, $_POST['usuario']);
-            $clave = md5(mysqli_real_escape_string($conexion, $_POST['clave']));
-            $query = mysqli_query($conexion, "SELECT * FROM usuario WHERE usuario = '$user' AND clave = '$clave' AND estado = 1");
-            mysqli_close($conexion);
-            $resultado = mysqli_num_rows($query);
-            if ($resultado > 0) {
-                $dato = mysqli_fetch_array($query);
-                $_SESSION['active'] = true;
-                $_SESSION['idUser'] = $dato['idusuario'];
-                $_SESSION['nombre'] = $dato['nombre'];
-                $_SESSION['user'] = $dato['usuario'];
-                header('location: src/');
-            } else {
+            
+            // Verificar que la conexión se estableció correctamente
+            if (!$conexion || mysqli_connect_errno()) {
                 $alert = '<div class="alert alert-danger" role="alert">
-                Usuario o Contraseña Incorrecta
+                Error de conexión a la base de datos. Por favor, intente más tarde.
                 </div>';
-                session_destroy();
+            } else {
+                $user = mysqli_real_escape_string($conexion, $_POST['usuario']);
+                $clave = md5(mysqli_real_escape_string($conexion, $_POST['clave']));
+                $query = mysqli_query($conexion, "SELECT * FROM usuario WHERE usuario = '$user' AND clave = '$clave' AND estado = 1");
+                
+                // Verificar si la consulta se ejecutó correctamente
+                if ($query === false) {
+                    $alert = '<div class="alert alert-danger" role="alert">
+                    Error al procesar la consulta. Por favor, intente más tarde.
+                    </div>';
+                } else {
+                    $resultado = mysqli_num_rows($query);
+                    if ($resultado > 0) {
+                        $dato = mysqli_fetch_array($query);
+                        $_SESSION['active'] = true;
+                        $_SESSION['idUser'] = $dato['idusuario'];
+                        $_SESSION['nombre'] = $dato['nombre'];
+                        $_SESSION['user'] = $dato['usuario'];
+                        mysqli_close($conexion);
+                        header('location: src/');
+                        exit();
+                    } else {
+                        $alert = '<div class="alert alert-danger" role="alert">
+                        Usuario o Contraseña Incorrecta
+                        </div>';
+                        session_destroy();
+                    }
+                }
+                // Cerrar conexión solo si no se redirigió
+                if (isset($conexion)) {
+                    mysqli_close($conexion);
+                }
             }
         }
     }
