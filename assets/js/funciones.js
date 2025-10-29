@@ -449,7 +449,7 @@ document.querySelector("#guardar_cristal")?.addEventListener("click", function (
     }
 })
 
-document.querySelector("#buscar_venta").addEventListener("click", function () {
+document.querySelector("#buscar_venta")?.addEventListener("click", function () {
     {
         $.ajax({
             url: "postpagos.php",
@@ -463,7 +463,7 @@ document.querySelector("#buscar_venta").addEventListener("click", function () {
     }
 })
 
-document.querySelector("#anular_venta").addEventListener("click", function () {
+document.querySelector("#anular_venta")?.addEventListener("click", function () {
     var idventa = $('#idanular').val();
     if(idventa == ""){
          Swal.fire({
