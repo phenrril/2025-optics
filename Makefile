@@ -41,7 +41,7 @@ shell-web: ## Abrir shell del contenedor web
 	docker exec -it optica_web bash
 
 mysql: ## Conectarse a MySQL
-	docker exec -it optica_db mysql -u opticauser -pOptica2024 u375391241_sis_ventas
+	docker exec -it optica_db mysql -u c2880275_ventas -pwego76FIfe c2880275_ventas
 
 status: ## Ver estado de los contenedores
 	docker-compose ps

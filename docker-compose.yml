@@ -5,9 +5,9 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: u375391241_sis_ventas
-      MYSQL_USER: opticauser
-      MYSQL_PASSWORD: Optica2024
+      MYSQL_DATABASE: c2880275_ventas
+      MYSQL_USER: c2880275_ventas
+      MYSQL_PASSWORD: wego76FIfe
     ports:
       - "3307:3306"
     volumes:
@@ -33,9 +33,9 @@ services:
         condition: service_healthy
     environment:
       DB_HOST: db
-      DB_USER: opticauser
-      DB_PASSWORD: Optica2024
-      DB_NAME: u375391241_sis_ventas
+      DB_USER: c2880275_ventas
+      DB_PASSWORD: wego76FIfe
+      DB_NAME: c2880275_ventas
     networks:
       - optica-network
 
