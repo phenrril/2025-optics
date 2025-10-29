@@ -32,14 +32,14 @@ echo "</div>";
 echo "<div class='box'>";
 echo "<h2>⚙️ Configuración de Conexión</h2>";
 
-$host = getenv('DB_HOST') ?: "127.0.0.1";
+$host_original = getenv('DB_HOST') ?: "localhost"; // Cambiar a localhost por defecto
 $user = getenv('DB_USER') ?: "c2880275_ventas";
 $clave = getenv('DB_PASSWORD') ?: "wego76FIfe";
 $bd = getenv('DB_NAME') ?: "c2880275_ventas";
 $port = (int) (getenv('DB_PORT') ?: 3306);
 
 echo "<pre>";
-echo "Host: " . htmlspecialchars($host) . "\n";
+echo "Host original: " . htmlspecialchars($host_original) . "\n";
 echo "Puerto: " . $port . "\n";
 echo "Usuario: " . htmlspecialchars($user) . "\n";
 echo "Base de datos: " . htmlspecialchars($bd) . "\n";
@@ -47,39 +47,61 @@ echo "Contraseña: " . (empty($clave) ? "❌ Vacía" : "✅ Configurada (" . str
 echo "</pre>";
 echo "</div>";
 
-// Intentar conexión
-echo "<div class='box'>";
-echo "<h2>🔌 Intentando Conexión...</h2>";
+// Configuraciones a probar en orden
+$configs_to_try = array(
+    array('host' => 'localhost', 'port' => null, 'socket' => null, 'desc' => 'localhost (sin puerto, usa socket automático)'),
+    array('host' => 'localhost', 'port' => 3306, 'socket' => null, 'desc' => 'localhost:3306'),
+    array('host' => '127.0.0.1', 'port' => 3306, 'socket' => null, 'desc' => '127.0.0.1:3306'),
+);
 
-$conexion = @mysqli_connect($host, $user, $clave, $bd, $port);
+// Intentar conexión con diferentes configuraciones
+echo "<div class='box'>";
+echo "<h2>🔌 Probando Diferentes Configuraciones...</h2>";
+
+$conexion = false;
+$config_exitosa = null;
+
+// Probar cada configuración
+foreach ($configs_to_try as $config) {
+    echo "<div style='margin: 10px 0; padding: 10px; background: #f9f9f9; border-radius: 3px;'>";
+    echo "<strong>Probando:</strong> " . htmlspecialchars($config['desc']) . "<br>";
+    
+    try {
+        if ($config['port'] === null) {
+            // Sin puerto específico (usa socket automático si está disponible)
+            $conexion_temp = @mysqli_connect($config['host'], $user, $clave, $bd);
+        } else {
+            $conexion_temp = @mysqli_connect($config['host'], $user, $clave, $bd, $config['port']);
+        }
+        
+        if ($conexion_temp) {
+            echo "<span style='color: green;'>✅ <strong>¡CONEXIÓN EXITOSA!</strong></span><br>";
+            $conexion = $conexion_temp;
+            $config_exitosa = $config;
+            echo "</div>";
+            break; // Salir del bucle si encontramos una conexión exitosa
+        } else {
+            $error_msg_temp = mysqli_connect_error();
+            $error_code_temp = mysqli_connect_errno();
+            echo "<span style='color: red;'>❌ Error: " . htmlspecialchars($error_msg_temp) . " (Código: " . $error_code_temp . ")</span>";
+        }
+    } catch (Exception $e) {
+        echo "<span style='color: red;'>❌ Excepción: " . htmlspecialchars($e->getMessage()) . "</span>";
+    }
+    
+    echo "</div>";
+}
 
 if (!$conexion) {
-    $error_msg = mysqli_connect_error();
-    $error_code = mysqli_connect_errno();
-    
     echo "<div class='error'>";
-    echo "<h3>❌ Error de Conexión</h3>";
-    echo "<p><strong>Mensaje:</strong> " . htmlspecialchars($error_msg) . "</p>";
-    echo "<p><strong>Código de error:</strong> " . $error_code . "</p>";
-    
-    // Información adicional según el código de error
-    switch ($error_code) {
-        case 1045:
-            echo "<p><strong>Problema:</strong> Acceso denegado. Verifica usuario y contraseña.</p>";
-            break;
-        case 1049:
-            echo "<p><strong>Problema:</strong> Base de datos no existe.</p>";
-            break;
-        case 2002:
-            echo "<p><strong>Problema:</strong> No se puede conectar al servidor MySQL.</p>";
-            echo "<p><strong>Sugerencia:</strong> Verifica que el host sea correcto. Prueba con 'localhost' en lugar de '127.0.0.1' o viceversa.</p>";
-            break;
-        case 2006:
-            echo "<p><strong>Problema:</strong> El servidor MySQL se ha ido.</p>";
-            break;
-        default:
-            echo "<p><strong>Sugerencia:</strong> Verifica la configuración de conexión.</p>";
-    }
+    echo "<h3>❌ Ninguna Configuración Funcionó</h3>";
+    echo "<p><strong>Recomendaciones:</strong></p>";
+    echo "<ul>";
+    echo "<li>Contacta con tu proveedor de hosting (Ferozo) para obtener el host correcto de MySQL</li>";
+    echo "<li>Verifica que el usuario tenga permisos para conectarse desde el servidor web</li>";
+    echo "<li>Revisa el panel de control de Ferozo para la información de conexión MySQL</li>";
+    echo "<li>Puede ser que necesites usar un socket Unix específico o un host diferente</li>";
+    echo "</ul>";
     echo "</div>";
 } else {
     echo "<div class='success'>";
@@ -88,11 +110,9 @@ if (!$conexion) {
     // Información de la conexión
     $server_info = mysqli_get_server_info($conexion);
     $host_info = mysqli_get_host_info($conexion);
-    $protocol_version = mysqli_get_protocol_info($conexion);
     
     echo "<p><strong>Versión del servidor MySQL:</strong> " . htmlspecialchars($server_info) . "</p>";
     echo "<p><strong>Información del host:</strong> " . htmlspecialchars($host_info) . "</p>";
-    echo "<p><strong>Versión del protocolo:</strong> " . $protocol_version . "</p>";
     
     // Probar consulta simple
     echo "<h4>📊 Probando Consulta...</h4>";
@@ -124,28 +144,31 @@ if (!$conexion) {
         echo "</div>";
     }
     
+    // Mostrar configuración exitosa
+    echo "<div class='info' style='margin-top: 20px;'>";
+    echo "<h3>✅ Configuración Exitosa Encontrada</h3>";
+    echo "<p><strong>Host:</strong> " . htmlspecialchars($config_exitosa['host']) . "</p>";
+    if ($config_exitosa['port'] !== null) {
+        echo "<p><strong>Puerto:</strong> " . $config_exitosa['port'] . "</p>";
+    } else {
+        echo "<p><strong>Puerto:</strong> Sin especificar (usa socket automático)</p>";
+    }
+    echo "<p><strong>Descripción:</strong> " . htmlspecialchars($config_exitosa['desc']) . "</p>";
+    echo "<p style='background: #fff3cd; padding: 10px; border-radius: 3px; margin-top: 10px;'>";
+    echo "<strong>⚠️ Importante:</strong> Actualiza <code>conexion.php</code> con esta configuración:<br>";
+    echo "<code>\$host = '" . htmlspecialchars($config_exitosa['host']) . "';</code><br>";
+    if ($config_exitosa['port'] === null) {
+        echo "<code>// No especificar puerto o usar null para socket automático</code>";
+    } else {
+        echo "<code>\$port = " . $config_exitosa['port'] . ";</code>";
+    }
+    echo "</p>";
+    echo "</div>";
+    
     // Cerrar conexión
     mysqli_close($conexion);
     echo "</div>";
 }
-
-// Probando con localhost si 127.0.0.1 falló
-if (!$conexion && $host === "127.0.0.1") {
-    echo "<div class='info'>";
-    echo "<h4>🔄 Probando con 'localhost'...</h4>";
-    $conexion2 = @mysqli_connect("localhost", $user, $clave, $bd, $port);
-    
-    if ($conexion2) {
-        echo "<p class='success'>✅ ¡Conexión exitosa con 'localhost'!</p>";
-        echo "<p><strong>Recomendación:</strong> Cambia el host en conexion.php de '127.0.0.1' a 'localhost'</p>";
-        mysqli_close($conexion2);
-    } else {
-        echo "<p>❌ También falló con 'localhost': " . htmlspecialchars(mysqli_connect_error()) . "</p>";
-    }
-    echo "</div>";
-}
-
-echo "</div>";
 
 echo "<div class='box'>";
 echo "<h2>💡 Siguientes Pasos</h2>";

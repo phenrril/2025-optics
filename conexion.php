@@ -5,21 +5,32 @@
     ini_set('log_errors', 1);
 
     // Configuración de base de datos
-    $host = getenv('DB_HOST') ?: "127.0.0.1"; // usar 127.0.0.1 evita problemas de socket con "localhost"
+    // En hosting compartido, 'localhost' suele usar socket Unix automáticamente
+    // Si DB_PORT está vacío o es null, mysqli_connect usará socket Unix en lugar de TCP
+    $host = getenv('DB_HOST') ?: "localhost"; // Cambiar a localhost para hosting compartido
     $user = getenv('DB_USER') ?: "c2880275_ventas";
     $clave = getenv('DB_PASSWORD') ?: "wego76FIfe";
     $bd = getenv('DB_NAME') ?: "c2880275_ventas";
 
-    // Puerto por defecto 3306 si no se define
-    $port = (int) (getenv('DB_PORT') ?: 3306);
+    // Puerto: null o vacío hace que use socket Unix en 'localhost'
+    // Si necesitas TCP explícito, usa un puerto (ej: 3306)
+    $db_port = getenv('DB_PORT');
+    $port = ($db_port !== false && $db_port !== '') ? (int) $db_port : null;
 
     // Inicializar variable de conexión
     $conexion = false;
     $error_conexion = null;
 
-    // Intentar conexión mysqli pasando el puerto como argumento separado
+    // Intentar conexión mysqli
+    // Si $port es null, mysqli_connect usará socket Unix cuando host='localhost'
     try {
-        $conexion = @mysqli_connect($host, $user, $clave, $bd, $port);
+        if ($port === null) {
+            // Sin puerto: usa socket Unix automático (recomendado para hosting compartido)
+            $conexion = @mysqli_connect($host, $user, $clave, $bd);
+        } else {
+            // Con puerto: usa TCP/IP explícitamente
+            $conexion = @mysqli_connect($host, $user, $clave, $bd, $port);
+        }
         
         if (!$conexion) {
             $error_conexion = mysqli_connect_error();
