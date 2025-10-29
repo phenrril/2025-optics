@@ -19,6 +19,8 @@ if (!empty($_SESSION['active'])) {
                 $alert = '<div class="alert alert-danger" role="alert">
                 Error de conexión a la base de datos. Por favor, intente más tarde.
                 </div>';
+                // Log de error en consola del navegador
+                echo '<script>console.error("DB connection error:", ' . json_encode(mysqli_connect_error()) . ');</script>';
             } else {
                 $user = mysqli_real_escape_string($conexion, $_POST['usuario']);
                 $clave = md5(mysqli_real_escape_string($conexion, $_POST['clave']));
@@ -29,6 +31,8 @@ if (!empty($_SESSION['active'])) {
                     $alert = '<div class="alert alert-danger" role="alert">
                     Error al procesar la consulta. Por favor, intente más tarde.
                     </div>';
+                    // Log de error en consola del navegador
+                    echo '<script>console.error("SQL query error:", ' . json_encode(mysqli_error($conexion)) . ', "Consulta:", ' . json_encode("SELECT * FROM usuario WHERE usuario = '[sanitizado]' AND clave = MD5('[sanitizado]') AND estado = 1") . ');</script>';
                 } else {
                     $resultado = mysqli_num_rows($query);
                     if ($resultado > 0) {

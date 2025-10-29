@@ -247,6 +247,15 @@ $(document).ready(function() {
             data: {},
             dataType: 'json',
             success: function(response) {
+                try {
+                    if (!response || response.success === false) {
+                        console.error('Error en respuesta de ocultar_productos_sin_stock:', response);
+                    } else {
+                        console.log('Éxito ocultar_productos_sin_stock:', response);
+                    }
+                } catch (e) {
+                    console.error('Excepción procesando respuesta:', e);
+                }
                 $('#resultado-ocultar').html(response.html);
                 $('#btnOcultarProductos').prop('disabled', false);
                 $('#btnOcultarProductos').html('<i class="fas fa-eye-slash"></i> Ocultar Productos Sin Stock');
@@ -263,7 +272,8 @@ $(document).ready(function() {
                     });
                 }
             },
-            error: function() {
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error('AJAX error ocultar_productos_sin_stock:', { status: jqXHR.status, textStatus: textStatus, error: errorThrown, responseText: jqXHR.responseText });
                 $('#resultado-ocultar').html('<div class="alert alert-danger">Error al procesar la solicitud</div>');
                 $('#btnOcultarProductos').prop('disabled', false);
                 $('#btnOcultarProductos').html('<i class="fas fa-eye-slash"></i> Ocultar Productos Sin Stock');
