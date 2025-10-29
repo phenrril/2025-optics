@@ -1,4 +1,24 @@
 <?php
+// Habilitar captura de errores temprano
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Registrar función para capturar errores fatales
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])) {
+        // Error fatal ocurrió
+        header('Content-Type: application/json');
+        echo json_encode(array(
+            'error' => true,
+            'type' => 'fatal_error',
+            'message' => $error['message'],
+            'file' => $error['file'],
+            'line' => $error['line']
+        ));
+    }
+});
 
 session_start();
 
@@ -14,14 +34,46 @@ if (!empty($_SESSION['active'])) {
         } else {
             require_once "conexion.php";
             
-            // Verificar que la conexión se estableció correctamente
-            if (!$conexion || mysqli_connect_errno()) {
+            // Verificar si hubo error de conexión
+            if (isset($GLOBALS['db_connection_error'])) {
+                $error_info = $GLOBALS['db_connection_error'];
+                $error_details = json_encode($error_info, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                
                 $alert = '<div class="alert alert-danger" role="alert">
-                Error de conexión a la base de datos. Por favor, intente más tarde.
+                <strong>Error de conexión a la base de datos</strong><br>
+                Por favor, verifique la configuración de conexión.
                 </div>';
+                
+                // Log detallado en consola
+                echo '<script>';
+                echo 'console.group("❌ Error de Conexión a Base de Datos");';
+                echo 'console.error("Mensaje:", ' . json_encode($error_info['message']) . ');';
+                echo 'console.error("Código:", ' . json_encode($error_info['code']) . ');';
+                echo 'console.error("Host:", ' . json_encode($error_info['host']) . ');';
+                echo 'console.error("Puerto:", ' . json_encode($error_info['port']) . ');';
+                echo 'console.error("Base de datos:", ' . json_encode($error_info['database']) . ');';
+                echo 'console.error("Usuario:", ' . json_encode($error_info['user']) . ');';
+                echo 'console.error("Detalles completos:", ' . $error_details . ');';
+                echo 'console.groupEnd();';
+                echo '</script>';
+            } elseif (!$conexion || mysqli_connect_errno()) {
+                $error_msg = mysqli_connect_error();
+                $error_code = mysqli_connect_errno();
+                
+                $alert = '<div class="alert alert-danger" role="alert">
+                <strong>Error de conexión a la base de datos</strong><br>
+                Por favor, verifique la configuración de conexión.
+                </div>';
+                
                 // Log de error en consola del navegador
-                echo '<script>console.error("DB connection error:", ' . json_encode(mysqli_connect_error()) . ');</script>';
-            } else {
+                echo '<script>';
+                echo 'console.group("❌ Error de Conexión MySQLi");';
+                echo 'console.error("Mensaje:", ' . json_encode($error_msg) . ');';
+                echo 'console.error("Código:", ' . json_encode($error_code) . ');';
+                echo 'console.groupEnd();';
+                echo '</script>';
+            } elseif ($conexion && is_object($conexion)) {
+                // Validar que $conexion es un objeto mysqli válido
                 $user = mysqli_real_escape_string($conexion, $_POST['usuario']);
                 $clave = md5(mysqli_real_escape_string($conexion, $_POST['clave']));
                 $query = mysqli_query($conexion, "SELECT * FROM usuario WHERE usuario = '$user' AND clave = '$clave' AND estado = 1");
@@ -52,9 +104,16 @@ if (!empty($_SESSION['active'])) {
                     }
                 }
                 // Cerrar conexión solo si no se redirigió
-                if (isset($conexion)) {
+                if (isset($conexion) && is_object($conexion)) {
                     mysqli_close($conexion);
                 }
+            } else {
+                // Caso inesperado: conexión no es válida pero no se capturó error
+                $alert = '<div class="alert alert-danger" role="alert">
+                <strong>Error inesperado de conexión</strong><br>
+                Estado de conexión no válido.
+                </div>';
+                echo '<script>console.error("Estado de conexión no válido");</script>';
             }
         }
     }
