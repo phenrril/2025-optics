@@ -5,10 +5,10 @@
  */
 
 // Configuración de base de datos
-$host = getenv('DB_HOST') ?: "127.0.0.1";
-$user = getenv('DB_USER') ?: "u375391241_opticaojito";
-$clave = getenv('DB_PASSWORD') ?: "Optica2024";
-$bd = getenv('DB_NAME') ?: "u375391241_sis_ventas";
+$host = getenv('DB_HOST') ?: "localhost";
+$user = getenv('DB_USER') ?: "c2880275_ventas";
+$clave = getenv('DB_PASSWORD') ?: "wego76FIfe";
+$bd = getenv('DB_NAME') ?: "c2880275_ventas";
 $port = getenv('DB_PORT') ?: "3306";
 $host_with_port = $host . ':' . $port;
 

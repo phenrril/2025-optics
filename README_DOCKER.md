@@ -37,9 +37,9 @@ Consulta el archivo SQL para obtener las credenciales de usuario inicial, o crea
 
 **Configuración de base de datos en Docker:**
 - Host: `db`
-- Usuario: `opticauser`
-- Contraseña: `Optica2024`
-- Base de datos: `u375391241_sis_ventas`
+- Usuario: `c2880275_ventas`
+- Contraseña: `wego76FIfe`
+- Base de datos: `c2880275_ventas`
 
 ## Comandos Útiles
 
@@ -65,7 +65,7 @@ docker-compose restart
 
 ### Acceder al contenedor de base de datos
 ```bash
-docker exec -it optica_db mysql -u opticauser -p
+docker exec -it optica_db mysql -u c2880275_ventas -p
 ```
 
 ### Acceder al contenedor web
