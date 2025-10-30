@@ -196,10 +196,15 @@ if (!empty($_POST)) {
         <button class="btn btn-modern-primary btn-modern-icon" type="button" data-toggle="modal" data-target="#nuevo_producto">
             <i class="fas fa-plus mr-2"></i> Nuevo Producto
         </button>
-        <div class="alert alert-light border-0 shadow-sm mb-0 py-2 px-3">
-            <i class="fas fa-info-circle text-primary mr-2"></i>
-            <strong>Total productos con stock:</strong> 
-            <span class="badge badge-info" id="total-productos">0</span>
+        <div class="d-flex align-items-center">
+            <div class="alert alert-light border-0 shadow-sm mb-0 py-2 px-3 mr-3">
+                <i class="fas fa-info-circle text-primary mr-2"></i>
+                <strong>Total productos con stock:</strong> 
+                <span class="badge badge-info" id="total-productos">0</span>
+            </div>
+            <div class="form-check mb-0" title="Ocultar/mostrar columna Precio Bruto">
+                <input class="form-check-input" type="checkbox" id="toggle-precio-bruto" checked>
+            </div>
         </div>
     </div>
 
@@ -218,7 +223,7 @@ if (!empty($_POST)) {
                 <th>Precio</th>
                 <th>Stock</th>
                 <th>Estado</th>
-                <th>Precio Bruto</th>
+                <th class="col-precio-bruto">Precio Bruto</th>
                 <th>Costo</th>
                 <th></th>
             </tr>
@@ -264,7 +269,7 @@ if (!empty($_POST)) {
                     <td><?php echo number_format($data['precio'], 2); ?></td>
                     <td><span class="<?php echo $stock_class; ?>"><?php echo $stock_icon; ?><?php echo $data['existencia']; ?></span></td>
                     <td><?php echo $estado; ?></td>
-                    <td><?php echo number_format($data['precio_bruto'], 2); ?></td>
+                    <td class="col-precio-bruto"><?php echo number_format($data['precio_bruto'], 2); ?></td>
                     <td><?php echo $costo_badge; ?></td>
                     <td>
                         <div class="btn-group" role="group">
@@ -424,6 +429,21 @@ if (!empty($_POST)) {
         var totalProductos = <?php echo $result; ?>;
         $('#total-productos').text(totalProductos);
         
+        // Toggle columna Precio Bruto (checked = ocultar)
+        function aplicarVisibilidadPrecioBruto() {
+            var ocultar = $('#toggle-precio-bruto').is(':checked');
+            var $columnas = $('#tbl th.col-precio-bruto, #tbl td.col-precio-bruto');
+            if (ocultar) {
+                $columnas.hide();
+            } else {
+                $columnas.show();
+            }
+        }
+
+        // Estado inicial (checkbox viene checked por defecto → ocultar)
+        aplicarVisibilidadPrecioBruto();
+        $('#toggle-precio-bruto').on('change', aplicarVisibilidadPrecioBruto);
+
         $("#btn_marca").click(function() {
             $.ajax({
                 url: "actualizar_porcentaje.php",
