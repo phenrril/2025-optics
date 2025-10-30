@@ -106,15 +106,35 @@ include_once "includes/header.php";
 }
 
 .select-modern {
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 12px 15px;
-    font-size: 0.95rem;
-    width: 100%;
+    border: 2px solid #e0e0e0 !important;
+    border-radius: 10px !important;
+    padding: 12px 40px 12px 15px !important;
+    font-size: 1rem !important;
+    background-color: #ffffff !important;
+    color: #333333 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 46px !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-color: #fff;
+    font-weight: 500 !important;
+    line-height: 1.5 !important;
+    text-align: left !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px 12px;
+    box-sizing: border-box !important;
+}
+
+.select-modern option {
+    padding: 10px !important;
+    background-color: white !important;
+    color: #333333 !important;
 }
 
 .select-modern:focus {
