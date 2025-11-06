@@ -21,15 +21,15 @@ if (empty($existe) && $id_user != 1) {
 if (!empty($_GET['id'])) {
     $id = intval($_GET['id']);
     if ($id > 0) {
-        // Eliminar el producto de la base de datos directamente
-        $query_delete = mysqli_query($conexion, "DELETE FROM producto WHERE codproducto = $id");
-        if ($query_delete) {
-            $_SESSION['mensaje'] = 'Producto eliminado permanentemente de la base de datos';
+        $query_update = mysqli_query($conexion, "UPDATE producto SET estado = 0 WHERE codproducto = $id");
+        if ($query_update) {
+            $_SESSION['mensaje'] = 'Producto inactivado exitosamente';
         } else {
-            $_SESSION['mensaje'] = 'Error al eliminar el producto: ' . mysqli_error($conexion);
+            $_SESSION['mensaje'] = 'Error al inactivar el producto: ' . mysqli_error($conexion);
         }
     }
 }
 header("Location: productos.php");
 exit();
 ?>
+

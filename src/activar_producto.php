@@ -1,17 +1,34 @@
 <?php
 session_start();
 require("../conexion.php");
-$id_user = $_SESSION['idUser'];
-$permiso = "usuarios";
-$sql = mysqli_query($conexion, "SELECT p.*, d.* FROM permisos p INNER JOIN detalle_permisos d ON p.id = d.id_permiso WHERE d.id_usuario = $id_user AND p.nombre = '$permiso'");
+
+// Validar sesión
+if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
+    header("Location: ../");
+    exit();
+}
+
+$id_user = intval($_SESSION['idUser']);
+$permiso = "productos";
+$permiso_escaped = mysqli_real_escape_string($conexion, $permiso);
+$sql = mysqli_query($conexion, "SELECT p.*, d.* FROM permisos p INNER JOIN detalle_permisos d ON p.id = d.id_permiso WHERE d.id_usuario = $id_user AND p.nombre = '$permiso_escaped'");
 $existe = mysqli_fetch_all($sql);
 if (empty($existe) && $id_user != 1) {
     header("Location: permisos.php");
+    exit();
 }
+
 if (!empty($_GET['id'])) {
-    $id = $_GET['id'];
-    $query_delete = mysqli_query($conexion, "UPDATE producto SET estado = 1 WHERE codproducto = $id");
-    mysqli_close($conexion);
-    header("Location: productos.php");
+    $id = intval($_GET['id']);
+    if ($id > 0) {
+        $query_update = mysqli_query($conexion, "UPDATE producto SET estado = 1 WHERE codproducto = $id");
+        if ($query_update) {
+            $_SESSION['mensaje'] = 'Producto activado exitosamente';
+        } else {
+            $_SESSION['mensaje'] = 'Error al activar el producto: ' . mysqli_error($conexion);
+        }
+    }
 }
+header("Location: productos.php");
+exit();
 ?>
