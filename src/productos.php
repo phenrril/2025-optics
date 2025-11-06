@@ -1,6 +1,16 @@
 <?php 
+// Habilitar reporte de errores para debugging (remover en producción)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+
 session_start();
 include "../conexion.php";
+
+// Verificar si hay errores de conexión
+if (!$conexion) {
+    die("Error de conexión a la base de datos: " . mysqli_connect_error());
+}
 
 // Validar sesión
 if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
@@ -20,57 +30,10 @@ if (empty($existe) && $id_user != 1) {
 }
 
 include_once "includes/header.php";
-
-if (!empty($_POST)) {
-    $codigo = $_POST['codigo'];
-    $producto = $_POST['producto'];
-    $precio = $_POST['precio'];
-    $cantidad = $_POST['cantidad'];
-    $usuario_id = intval($_SESSION['idUser']);
-    $precio_bruto = $_POST['precio_bruto'];
-    $marca = $_POST['marca'];
-    $alert = "";
-    
-    if (empty($codigo) || empty($producto)|| empty($marca) || empty($precio) || $precio < 0 || empty($cantidad) || $cantidad < 0 || empty($precio_bruto) || $precio_bruto < 0) {
-        $alert = '<div class="alert alert-danger" role="alert">
-            Todos los campos son obligatorios
-          </div>';
-    } else {
-        // Sanitizar variables
-        $codigo = mysqli_real_escape_string($conexion, $codigo);
-        $producto = mysqli_real_escape_string($conexion, $producto);
-        $marca = mysqli_real_escape_string($conexion, $marca);
-        $precio = floatval($precio);
-        $cantidad = intval($cantidad);
-        $precio_bruto = floatval($precio_bruto);
-        
-        $query = mysqli_query($conexion, "SELECT * FROM producto WHERE codigo = '$codigo'");
-        $result = mysqli_fetch_array($query);
-        
-        if ($result > 0) {
-            $alert = '<div class="alert alert-warning" role="alert">
-                El código ya existe
-            </div>';
-        } else {
-            $costo = isset($_POST['costo']) ? 1 : 0;
-            $query_insert = mysqli_query($conexion, "INSERT INTO producto(codigo, descripcion, marca, precio, existencia, usuario_id, precio_bruto, costo) VALUES ('$codigo', '$producto', '$marca', '$precio', '$cantidad', '$usuario_id', '$precio_bruto', '$costo')");
-            
-            if ($query_insert) {
-                $alert = '<div class="alert alert-success" role="alert">
-                    Producto Registrado
-                </div>';
-            } else {
-                $alert = '<div class="alert alert-danger" role="alert">
-                    Error al registrar el producto
-                </div>';
-            }
-        }
-    }
-}
 ?>
 
 <style>
-/* Estilos modernos para productos */
+/* Estilos críticos para productos - mover al head para carga rápida */
 .productos-container {
     max-width: 1600px;
     margin: 0 auto;
@@ -165,26 +128,74 @@ if (!empty($_POST)) {
     vertical-align: middle;
     border-bottom: 1px solid #e9ecef;
 }
-
-.badge-custom {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.btn-action {
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: none;
-    transition: all 0.3s;
-    margin-right: 5px;
-}
-
-.btn-action:hover {
-    transform: scale(1.1);
-}
 </style>
+
+<?php
+if (!empty($_POST) && isset($_POST['codigo'])) {
+    error_log("DEBUG: Formulario recibido - POST data: " . print_r($_POST, true));
+    
+    $codigo = isset($_POST['codigo']) ? $_POST['codigo'] : '';
+    $producto = isset($_POST['producto']) ? $_POST['producto'] : '';
+    $precio = isset($_POST['precio']) ? $_POST['precio'] : '';
+    $cantidad = isset($_POST['cantidad']) ? $_POST['cantidad'] : '';
+    $usuario_id = intval($_SESSION['idUser']);
+    $precio_bruto = isset($_POST['precio_bruto']) ? $_POST['precio_bruto'] : '';
+    $marca = isset($_POST['marca']) ? $_POST['marca'] : '';
+    $alert = "";
+    
+    error_log("DEBUG: Valores procesados - codigo: $codigo, producto: $producto, precio: $precio, cantidad: $cantidad, marca: $marca");
+    
+    if (empty($codigo) || empty($producto) || empty($marca) || $precio === '' || $precio < 0 || $cantidad === '' || $cantidad < 0 || $precio_bruto === '' || $precio_bruto < 0) {
+        error_log("DEBUG: Validación falló");
+        $alert = '<div class="alert alert-danger" role="alert">
+            Todos los campos son obligatorios y los valores numéricos deben ser mayores o iguales a cero
+          </div>';
+    } else {
+        // Sanitizar variables
+        $codigo = mysqli_real_escape_string($conexion, $codigo);
+        $producto = mysqli_real_escape_string($conexion, $producto);
+        $marca = mysqli_real_escape_string($conexion, $marca);
+        $precio = floatval($precio);
+        $cantidad = intval($cantidad);
+        $precio_bruto = floatval($precio_bruto);
+        
+        $query = mysqli_query($conexion, "SELECT * FROM producto WHERE codigo = '$codigo'");
+        if (!$query) {
+            error_log("DEBUG: Error en consulta SELECT: " . mysqli_error($conexion));
+            $alert = '<div class="alert alert-danger" role="alert">
+                Error al verificar código: ' . mysqli_error($conexion) . '
+            </div>';
+        } else {
+            $result = mysqli_fetch_array($query);
+            
+            if ($result > 0) {
+                error_log("DEBUG: Código ya existe");
+                $alert = '<div class="alert alert-warning" role="alert">
+                    El código ya existe
+                </div>';
+            } else {
+                $costo = isset($_POST['costo']) ? 1 : 0;
+                error_log("DEBUG: Intentando insertar producto - codigo: $codigo, producto: $producto, precio: $precio, cantidad: $cantidad");
+                
+                $query_insert = mysqli_query($conexion, "INSERT INTO producto(codigo, descripcion, marca, precio, existencia, usuario_id, precio_bruto, costo) VALUES ('$codigo', '$producto', '$marca', '$precio', '$cantidad', '$usuario_id', '$precio_bruto', '$costo')");
+                
+                if ($query_insert) {
+                    error_log("DEBUG: Producto insertado exitosamente");
+                    // Redireccionar después de guardar exitosamente para evitar reenvío del formulario
+                    $_SESSION['mensaje'] = 'Producto registrado exitosamente';
+                    header("Location: productos.php");
+                    exit();
+                } else {
+                    error_log("DEBUG: Error al insertar: " . mysqli_error($conexion));
+                    $alert = '<div class="alert alert-danger" role="alert">
+                        Error al registrar el producto: ' . mysqli_error($conexion) . '
+                    </div>';
+                }
+            }
+        }
+    }
+}
+?>
 
 <div class="productos-container">
     <div class="page-header-modern">
@@ -199,7 +210,7 @@ if (!empty($_POST)) {
         <div class="d-flex align-items-center">
             <div class="alert alert-light border-0 shadow-sm mb-0 py-2 px-3 mr-3">
                 <i class="fas fa-info-circle text-primary mr-2"></i>
-                <strong>Total productos con stock:</strong> 
+                <strong>Total productos:</strong> 
                 <span class="badge badge-info" id="total-productos">0</span>
             </div>
             <div class="form-check mb-0" title="Ocultar/mostrar columna Precio Bruto">
@@ -208,7 +219,20 @@ if (!empty($_POST)) {
         </div>
     </div>
 
-    <?php echo isset($alert) ? $alert : ''; ?>
+    <?php 
+    // Mostrar mensaje de éxito después de redirección
+    if (isset($_SESSION['mensaje'])) {
+        echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle mr-2"></i>' . $_SESSION['mensaje'] . '
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>';
+        unset($_SESSION['mensaje']);
+    }
+    // Mostrar alertas de error o validación
+    echo isset($alert) ? $alert : ''; 
+    ?>
 
 <div class="card-modern">
     <div class="card-body-modern">
@@ -230,8 +254,8 @@ if (!empty($_POST)) {
         </thead>
         <tbody>
             <?php
-                // Mostrar solo productos con stock (existencia > 0) Y activos (estado = 1)
-                $query = mysqli_query($conexion, "SELECT * FROM producto WHERE existencia > 0 AND estado = 1 ORDER BY codproducto DESC");
+                // Mostrar TODOS los productos, incluyendo los que no tienen stock (incluso si están inactivos)
+                $query = mysqli_query($conexion, "SELECT * FROM producto ORDER BY codproducto DESC");
                 $result = mysqli_num_rows($query);
                 
                 if ($result > 0) {
@@ -242,13 +266,13 @@ if (!empty($_POST)) {
                             $estado = '<span class="badge badge-custom badge-danger"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>';
                         }
                         
-                        // Stock bajo
-                        if ($data['existencia'] <= 10 && $data['existencia'] > 0) {
-                            $stock_class = 'text-warning';
-                            $stock_icon = '<i class="fas fa-exclamation-triangle mr-1"></i>';
-                        } elseif ($data['existencia'] <= 0) {
+                        // Indicadores de stock
+                        if ($data['existencia'] <= 0) {
                             $stock_class = 'text-danger';
                             $stock_icon = '<i class="fas fa-times-circle mr-1"></i>';
+                        } elseif ($data['existencia'] <= 10) {
+                            $stock_class = 'text-warning';
+                            $stock_icon = '<i class="fas fa-exclamation-triangle mr-1"></i>';
                         } else {
                             $stock_class = 'text-success';
                             $stock_icon = '<i class="fas fa-check-circle mr-1"></i>';
@@ -280,17 +304,31 @@ if (!empty($_POST)) {
                                 <a href="editar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-success btn-sm btn-action" title="Editar">
                                     <i class='fas fa-edit'></i>
                                 </a>
-                                <form action="eliminar_producto.php?id=<?php echo $data['codproducto']; ?>" method="post" class="confirmar d-inline">
-                                    <button class="btn btn-danger btn-sm btn-action" type="submit" title="Eliminar">
+                                <a href="inactivar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-warning btn-sm btn-action confirmar-inactivar" title="Inactivar">
+                                    <i class='fas fa-ban'></i>
+                                </a>
+                                <form action="eliminar_producto.php?id=<?php echo $data['codproducto']; ?>" method="post" class="confirmar-eliminar d-inline">
+                                    <button class="btn btn-danger btn-sm btn-action" type="submit" title="Eliminar Permanentemente">
                                         <i class='fas fa-trash-alt'></i>
                                     </button>
                                 </form>
                             <?php } ?>
                             
                             <?php if ($data['estado'] == 0) { ?>
+                                <a href="agregar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-primary btn-sm btn-action" title="Agregar Stock">
+                                    <i class='fas fa-plus-circle'></i>
+                                </a>
+                                <a href="editar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-success btn-sm btn-action" title="Editar">
+                                    <i class='fas fa-edit'></i>
+                                </a>
                                 <a href="activar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-warning btn-sm btn-action" title="Activar">
                                     <i class='fas fa-check-circle'></i>
                                 </a>
+                                <form action="eliminar_producto.php?id=<?php echo $data['codproducto']; ?>" method="post" class="confirmar-eliminar d-inline">
+                                    <button class="btn btn-danger btn-sm btn-action" type="submit" title="Eliminar Permanentemente">
+                                        <i class='fas fa-trash-alt'></i>
+                                    </button>
+                                </form>
                             <?php } ?>
                         </div>
                     </td>
@@ -321,8 +359,13 @@ if (!empty($_POST)) {
                 </button>
             </div>
             <div class="modal-body">
-                <form action="" method="post" autocomplete="off">
-                    <?php echo isset($alert) ? $alert : ''; ?>
+                <form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="post" autocomplete="off" id="form_nuevo_producto">
+                    <?php 
+                    // Mostrar alertas dentro del modal si hay errores
+                    if (isset($alert) && !empty($alert)) {
+                        echo $alert;
+                    }
+                    ?>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -443,6 +486,154 @@ if (!empty($_POST)) {
         // Estado inicial (checkbox viene checked por defecto → ocultar)
         aplicarVisibilidadPrecioBruto();
         $('#toggle-precio-bruto').on('change', aplicarVisibilidadPrecioBruto);
+
+        // Manejar el envío del formulario del modal
+        $('#nuevo_producto form').on('submit', function(e) {
+            console.log('=== INICIO ENVÍO FORMULARIO ===');
+            console.log('Evento submit capturado');
+            
+            // Validar que todos los campos requeridos estén llenos
+            var codigo = $('#codigo').val().trim();
+            var producto = $('#producto').val().trim();
+            var marca = $('#marca').val().trim();
+            var cantidad = $('#cantidad').val();
+            var precio = $('#precio').val();
+            var precio_bruto = $('#precio_bruto').val();
+            
+            console.log('Valores del formulario:', {
+                codigo: codigo,
+                producto: producto,
+                marca: marca,
+                cantidad: cantidad,
+                precio: precio,
+                precio_bruto: precio_bruto
+            });
+            
+            // Validar campos de texto
+            if (!codigo || !producto || !marca) {
+                console.log('ERROR: Campos de texto incompletos');
+                e.preventDefault();
+                alert('Por favor complete todos los campos obligatorios');
+                return false;
+            }
+            
+            // Validar campos numéricos (pueden ser 0 pero no vacíos)
+            if (cantidad === '' || precio === '' || precio_bruto === '') {
+                console.log('ERROR: Campos numéricos incompletos');
+                e.preventDefault();
+                alert('Por favor complete todos los campos numéricos');
+                return false;
+            }
+            
+            // Validar que los valores numéricos no sean negativos
+            if (parseFloat(precio) < 0 || parseFloat(cantidad) < 0 || parseFloat(precio_bruto) < 0) {
+                console.log('ERROR: Valores numéricos negativos');
+                e.preventDefault();
+                alert('Los valores numéricos no pueden ser negativos');
+                return false;
+            }
+            
+            console.log('Validación exitosa, enviando formulario...');
+            console.log('Form action:', $(this).attr('action'));
+            console.log('Form method:', $(this).attr('method'));
+            
+            // Si todo está bien, permitir el envío normal del formulario
+            // El formulario se enviará normalmente y la página se recargará
+            console.log('=== FIN ENVÍO FORMULARIO ===');
+        });
+        
+        // Log cuando el modal se muestra
+        $('#nuevo_producto').on('show.bs.modal', function () {
+            console.log('Modal abierto');
+        });
+        
+        // Log cuando el modal se oculta
+        $('#nuevo_producto').on('hide.bs.modal', function () {
+            console.log('Modal cerrado');
+        });
+        
+        // Log cuando el modal está completamente oculto
+        $('#nuevo_producto').on('hidden.bs.modal', function () {
+            console.log('Modal completamente oculto');
+        });
+
+        // Limpiar el formulario cuando se cierra el modal
+        $('#nuevo_producto').on('hidden.bs.modal', function () {
+            console.log('Limpiando formulario del modal');
+            $(this).find('form')[0].reset();
+            $(this).find('.alert').remove();
+        });
+
+        // Mostrar el modal si hay errores de validación
+        <?php if (isset($alert) && !empty($alert)): ?>
+            console.log('Hay errores de validación, mostrando modal');
+            $('#nuevo_producto').modal('show');
+        <?php endif; ?>
+        
+        // Log cuando la página se carga
+        console.log('Página productos.php cargada');
+        console.log('¿Hay POST?', <?php echo !empty($_POST) ? 'true' : 'false'; ?>);
+        console.log('¿Hay alert?', <?php echo isset($alert) && !empty($alert) ? 'true' : 'false'; ?>);
+        
+        // Log cuando se hace click en el botón "Agregar Stock"
+        $('a[href*="agregar_producto.php"]').on('click', function(e) {
+            var href = $(this).attr('href');
+            console.log('=== CLICK EN BOTÓN AGREGAR STOCK ===');
+            console.log('URL destino:', href);
+            console.log('Evento:', e);
+            
+            // Verificar si el enlace es válido
+            if (!href || href === '#') {
+                console.error('ERROR: Enlace inválido');
+                e.preventDefault();
+                alert('Error: Enlace inválido');
+                return false;
+            }
+            
+            console.log('Navegando a:', href);
+            // Permitir la navegación normal
+        });
+
+        // Confirmación para inactivar producto
+        $('.confirmar-inactivar').on('click', function(e) {
+            e.preventDefault();
+            var url = $(this).attr('href');
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "El producto se marcará como inactivo pero no se eliminará de la base de datos",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, inactivar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        });
+
+        // Confirmación para eliminar producto permanentemente
+        $('.confirmar-eliminar').on('submit', function(e) {
+            e.preventDefault();
+            var form = $(this);
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: "¡Esta acción no se puede deshacer! El producto se eliminará permanentemente de la base de datos",
+                icon: 'error',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, eliminar permanentemente',
+                cancelButtonText: 'Cancelar',
+                dangerMode: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.off('submit').submit();
+                }
+            });
+        });
 
         $("#btn_marca").click(function() {
             $.ajax({

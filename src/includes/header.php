@@ -12,10 +12,110 @@
     <meta name="description" content="" />
     <meta name="author" content="" />
     <title>Panel de Administración</title>
+    
+    <!-- Preload recursos críticos -->
+    <link rel="preload" href="../assets/css/styles.css" as="style">
+    <link rel="preload" href="../assets/css/dataTables.bootstrap4.min.css" as="style">
+    
+    <!-- Cargar CSS crítico inline para evitar FOUC -->
+    <style>
+        /* Estilos críticos para botones - cargar inmediatamente */
+        .btn-action {
+            padding: 6px 12px !important;
+            border-radius: 8px !important;
+            border: none !important;
+            transition: all 0.3s !important;
+            margin-right: 5px !important;
+            display: inline-block !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            cursor: pointer !important;
+            font-size: 0.875rem !important;
+            line-height: 1.5 !important;
+        }
+        
+        .btn-action:hover {
+            transform: scale(1.1) !important;
+        }
+        
+        .btn-primary.btn-sm.btn-action {
+            color: #fff !important;
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+        }
+        
+        .btn-success.btn-sm.btn-action {
+            color: #fff !important;
+            background-color: #28a745 !important;
+            border-color: #28a745 !important;
+        }
+        
+        .btn-danger.btn-sm.btn-action {
+            color: #fff !important;
+            background-color: #dc3545 !important;
+            border-color: #dc3545 !important;
+        }
+        
+        .badge-custom {
+            padding: 6px 12px !important;
+            border-radius: 20px !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
+            display: inline-block !important;
+        }
+        
+        .badge-success {
+            color: #fff !important;
+            background-color: #28a745 !important;
+        }
+        
+        .badge-info {
+            color: #fff !important;
+            background-color: #17a2b8 !important;
+        }
+        
+        .badge-secondary {
+            color: #fff !important;
+            background-color: #6c757d !important;
+        }
+        
+        /* Asegurar que los botones se muestren correctamente desde el inicio */
+        .btn-group {
+            display: inline-flex !important;
+            vertical-align: middle !important;
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.5rem !important;
+            font-size: 0.875rem !important;
+            line-height: 1.5 !important;
+            border-radius: 0.2rem !important;
+        }
+        
+        /* Asegurar que los badges se muestren correctamente */
+        .badge {
+            display: inline-block !important;
+            padding: 0.25em 0.4em !important;
+            font-size: 75% !important;
+            font-weight: 700 !important;
+            line-height: 1 !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+            vertical-align: baseline !important;
+            border-radius: 0.25rem !important;
+        }
+    </style>
+    
     <link href="../assets/css/styles.css" rel="stylesheet" />
     <link href="../assets/css/dataTables.bootstrap4.min.css" rel="stylesheet" crossorigin="anonymous" />
     <link rel="stylesheet" href="../assets/js/jquery-ui/jquery-ui.min.css">
-    <script src="../assets/js/all.min.js" crossorigin="anonymous"></script>
+    
+    <!-- Cargar Font Awesome de forma asíncrona para no bloquear renderizado -->
+    <script src="../assets/js/all.min.js" crossorigin="anonymous" defer></script>
+    
+    <!-- Preload scripts críticos -->
+    <link rel="preload" href="../assets/js/jquery-3.6.0.min.js" as="script">
+    <link rel="preload" href="../assets/js/bootstrap.bundle.min.js" as="script">
     
 </head>
 

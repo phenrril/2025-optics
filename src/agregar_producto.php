@@ -1,47 +1,98 @@
 <?php
-include_once "includes/header.php";
+// Habilitar reporte de errores para debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('log_errors', 1);
+
+session_start();
 include "../conexion.php";
-$id_user = $_SESSION['idUser'];
+
+// Verificar si hay errores de conexión
+if (!$conexion) {
+    die("Error de conexión a la base de datos: " . mysqli_connect_error());
+}
+
+// Validar sesión
+if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
+    header("Location: ../");
+    exit();
+}
+
+$id_user = intval($_SESSION['idUser']);
 $permiso = "productos";
-$sql = mysqli_query($conexion, "SELECT p.*, d.* FROM permisos p INNER JOIN detalle_permisos d ON p.id = d.id_permiso WHERE d.id_usuario = $id_user AND p.nombre = '$permiso'");
+$permiso_escaped = mysqli_real_escape_string($conexion, $permiso);
+$sql = mysqli_query($conexion, "SELECT p.*, d.* FROM permisos p INNER JOIN detalle_permisos d ON p.id = d.id_permiso WHERE d.id_usuario = $id_user AND p.nombre = '$permiso_escaped'");
 $existe = mysqli_fetch_all($sql);
 if (empty($existe) && $id_user != 1) {
     header("Location: permisos.php");
+    exit();
 }
+
+// Validar ID del producto
 if (empty($_GET['id'])) {
     header("Location: productos.php");
-} else {
-    $id_producto = $_GET['id'];
-    if (!is_numeric($id_producto)) {
-        header("Location: productos.php");
-    }
-    $consulta = mysqli_query($conexion, "SELECT * FROM producto WHERE codproducto = $id_producto");
-    $data_producto = mysqli_fetch_assoc($consulta);
+    exit();
 }
+
+$id_producto = intval($_GET['id']);
+if (!is_numeric($id_producto) || $id_producto <= 0) {
+    header("Location: productos.php");
+    exit();
+}
+
+// Obtener datos del producto
+$consulta = mysqli_query($conexion, "SELECT * FROM producto WHERE codproducto = $id_producto");
+if (!$consulta) {
+    die("Error al consultar producto: " . mysqli_error($conexion));
+}
+
+$data_producto = mysqli_fetch_assoc($consulta);
+if (!$data_producto) {
+    header("Location: productos.php");
+    exit();
+}
+
+// Procesar formulario
+$alert = "";
 if (!empty($_POST)) {
-    $alert = "";
-    if (!empty($_POST['cantidad']) || !empty($_POST['precio']) || !empty($_POST['producto_id'])) {
-        $precio = $_POST['precio'];
-        $cantidad = $_POST['cantidad'];
-        $producto_id = $_GET['id'];
+    error_log("DEBUG agregar_producto: Formulario recibido - POST data: " . print_r($_POST, true));
+    
+    $precio = isset($_POST['precio']) ? floatval($_POST['precio']) : $data_producto['precio'];
+    $cantidad = isset($_POST['cantidad']) ? intval($_POST['cantidad']) : 0;
+    
+    if ($cantidad > 0) {
         $total = $cantidad + $data_producto['existencia'];
-        $query_insert = mysqli_query($conexion, "UPDATE producto SET existencia = $total WHERE codproducto = $id_producto");
-        if ($query_insert) {
-            $alert = '<div class="alert alert-success" role="alert">
-                        Stock actualizado
-                    </div>';
+        error_log("DEBUG agregar_producto: Actualizando stock - cantidad actual: {$data_producto['existencia']}, agregar: $cantidad, total: $total");
+        
+        // Actualizar existencia y precio si se proporcionó
+        if ($precio > 0 && $precio != $data_producto['precio']) {
+            $query_update = mysqli_query($conexion, "UPDATE producto SET existencia = $total, precio = $precio WHERE codproducto = $id_producto");
         } else {
+            $query_update = mysqli_query($conexion, "UPDATE producto SET existencia = $total WHERE codproducto = $id_producto");
+        }
+        
+        if ($query_update) {
+            error_log("DEBUG agregar_producto: Stock actualizado exitosamente");
+            $alert = '<div class="alert alert-success" role="alert">
+                        Stock actualizado exitosamente
+                    </div>';
+            // Recargar datos del producto
+            $consulta = mysqli_query($conexion, "SELECT * FROM producto WHERE codproducto = $id_producto");
+            $data_producto = mysqli_fetch_assoc($consulta);
+        } else {
+            error_log("DEBUG agregar_producto: Error al actualizar: " . mysqli_error($conexion));
             $alert = '<div class="alert alert-danger" role="alert">
-                        Error al ingresar la cantidad
+                        Error al ingresar la cantidad: ' . mysqli_error($conexion) . '
                     </div>';
         }
-        mysqli_close($conexion);
     } else {
         $alert = '<div class="alert alert-danger" role="alert">
-                        Todo los campos son obligatorios
-                    </div>';
+                    La cantidad debe ser mayor a cero
+                </div>';
     }
 }
+
+include_once "includes/header.php";
 ?>
 <div class="row">
     <div class="col-lg-6 m-auto">

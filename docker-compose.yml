@@ -12,7 +12,7 @@ services:
       - "3307:3306"
     volumes:
       - ./mysql-data:/var/lib/mysql
-      - ./u375391241_sis_ventas.sql:/docker-entrypoint-initdb.d/init.sql
+      - "./nati30.sql:/docker-entrypoint-initdb.d/init.sql"
     networks:
       - optica-network
     healthcheck:
