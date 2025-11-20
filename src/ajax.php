@@ -98,7 +98,7 @@ if (isset($_GET['q'])) {
     $descuento = floatval($_GET['descuento']);
     $obrasocial = isset($_GET['obrasocial']) ? floatval($_GET['obrasocial']) : 0;
     $metodo_pago = intval($_GET['metodo_pago']);
-    $fecha = date("Y-m-d");
+    $fecha = date("Y-m-d H:i:s");
 
     // Validar que los valores sean positivos
     if ($abona < 0 || $descuento < 0 || $obrasocial < 0 || $metodo_pago < 1) {
@@ -113,14 +113,36 @@ if (isset($_GET['q'])) {
         die();
     }
 
+    // Validar que existan productos en detalle_temp
+    $verificar_productos = mysqli_query($conexion, "SELECT COUNT(*) as total FROM detalle_temp WHERE id_usuario = $id_user");
+    $productos_data = mysqli_fetch_assoc($verificar_productos);
+    $num_productos = intval($productos_data['total']);
+    
+    if ($num_productos == 0) {
+        echo json_encode(array('mensaje' => 'error', 'detalle' => 'No hay productos en la venta. Agregue al menos un producto antes de generar la venta.'));
+        die();
+    }
+
     // Obtener totales
     $consulta = mysqli_query($conexion, "SELECT SUM(total) AS total_pagar FROM detalle_temp WHERE id_usuario = $id_user");
     $result = mysqli_fetch_assoc($consulta);
-    $total_pagar = floatval($result['total_pagar']);
+    $total_pagar = floatval($result['total_pagar'] ?? 0);
+
+    // Validar que el total sea mayor a 0
+    if ($total_pagar <= 0) {
+        echo json_encode(array('mensaje' => 'error', 'detalle' => 'El total de la venta debe ser mayor a cero'));
+        die();
+    }
 
     // Aplicar descuento y obra social
     $subtotal = $total_pagar - $obrasocial;
     $total = $subtotal * $descuento;
+    
+    // Validar que el total final sea mayor a 0
+    if ($total <= 0) {
+        echo json_encode(array('mensaje' => 'error', 'detalle' => 'El total de la venta después de aplicar descuentos debe ser mayor a cero'));
+        die();
+    }
 
     // Validar que el abono no exceda el total
     if ($abona > $total) {
@@ -134,14 +156,20 @@ if (isset($_GET['q'])) {
     mysqli_begin_transaction($conexion);
 
     try {
+        // Log para depuración
+        error_log("Procesando venta - Usuario: $id_user, Cliente: $id_cliente, Total: $total, Fecha: $fecha");
+        
         // 1. Insertar venta
         $insertar = mysqli_query($conexion, "INSERT INTO ventas(id_cliente, total, id_usuario, abona, resto, obrasocial, fecha, id_metodo) VALUES ($id_cliente, $total, $id_user, $abona, $resto, $obrasocial, '$fecha', $metodo_pago)");
         
         if (!$insertar) {
-            throw new Exception("Error al insertar venta: " . mysqli_error($conexion));
+            $error_sql = mysqli_error($conexion);
+            error_log("Error SQL al insertar venta: " . $error_sql);
+            throw new Exception("Error al insertar venta: " . $error_sql);
         }
 
         $ultimoId = mysqli_insert_id($conexion);
+        error_log("Venta insertada exitosamente - ID: $ultimoId");
 
         // 2. Insertar en ingresos
         $insertar_metodo = mysqli_query($conexion, "INSERT INTO ingresos(ingresos, fecha, id_venta, id_cliente, id_metodo) VALUES ($abona, '$fecha', $ultimoId, $id_cliente, $metodo_pago)");
@@ -324,15 +352,24 @@ if (isset($_GET['q'])) {
 
         // CONFIRMAR TRANSACCIÓN
         mysqli_commit($conexion);
+        error_log("Transacción confirmada - Venta ID: $ultimoId guardada exitosamente");
 
         $msg = array('id_cliente' => $id_cliente, 'id_venta' => $ultimoId, 'id' => $ultimoId);
 
     } catch (Exception $e) {
         // REVERTIR TRANSACCIÓN en caso de error
         mysqli_rollback($conexion);
+        error_log("Error al procesar venta: " . $e->getMessage());
         $msg = array('mensaje' => 'error', 'detalle' => $e->getMessage());
+    } catch (Error $e) {
+        // Capturar errores fatales de PHP
+        mysqli_rollback($conexion);
+        error_log("Error fatal al procesar venta: " . $e->getMessage());
+        $msg = array('mensaje' => 'error', 'detalle' => 'Error interno del servidor. Por favor, contacte al administrador.');
     }
 
+    // Asegurar que siempre se devuelva una respuesta JSON válida
+    header('Content-Type: application/json');
     echo json_encode($msg);
     die();
 

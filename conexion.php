@@ -1,4 +1,7 @@
 <?php
+    // Configurar zona horaria
+    date_default_timezone_set('America/Argentina/Buenos_Aires');
+    
     // Habilitar reporte de errores para depuración (en producción debería ser 0)
     error_reporting(E_ALL);
     ini_set('display_errors', 0); // No mostrar en pantalla, solo capturar
