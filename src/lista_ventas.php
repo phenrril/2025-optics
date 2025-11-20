@@ -31,23 +31,32 @@ error_log("Lista ventas - Usuario logueado ID: $id_user - Mostrando TODAS las ve
 
 // Consulta para contar total de ventas (SIN filtro de usuario - mostrar todas)
 // Usar LEFT JOIN para evitar que se pierdan ventas si hay problemas con el cliente
-// Ordenar por fecha DESC y luego por ID DESC para asegurar orden correcto
-$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v LEFT JOIN cliente c ON v.id_cliente = c.idcliente ORDER BY v.fecha DESC, v.id DESC");
+// Ordenar por ID DESC para mostrar las más recientes primero (en caso de que fecha sea igual)
+$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v LEFT JOIN cliente c ON v.id_cliente = c.idcliente ORDER BY v.id DESC");
 
 // DEBUG: Verificar si hay ventas
 if ($query === false) {
-    error_log("Error en consulta de ventas: " . mysqli_error($conexion));
+    error_log("ERROR en consulta de ventas: " . mysqli_error($conexion));
+    echo "<div class='alert alert-danger'>Error en consulta: " . mysqli_error($conexion) . "</div>";
 } else {
     $num_ventas_total = mysqli_num_rows($query);
     error_log("Total de ventas encontradas (todas): $num_ventas_total");
     
-    // DEBUG: Verificar las últimas 5 ventas y sus id_usuario
-    $query_debug = mysqli_query($conexion, "SELECT id, id_usuario, fecha, total FROM ventas ORDER BY fecha DESC, id DESC LIMIT 5");
-    if ($query_debug) {
-        error_log("Últimas 5 ventas en BD:");
-        while ($row_debug = mysqli_fetch_assoc($query_debug)) {
-            error_log("  - Venta ID: {$row_debug['id']}, Usuario: {$row_debug['id_usuario']}, Fecha: {$row_debug['fecha']}, Total: {$row_debug['total']}");
+    // DEBUG: Mostrar información temporal en la página
+    if ($id_user == 1) {
+        echo "<div class='alert alert-info' style='margin: 20px;'>";
+        echo "<strong>DEBUG (solo admin):</strong><br>";
+        echo "Total ventas en consulta: $num_ventas_total<br>";
+        
+        // Verificar las últimas 5 ventas
+        $query_debug = mysqli_query($conexion, "SELECT id, id_usuario, id_cliente, fecha, total FROM ventas ORDER BY id DESC LIMIT 5");
+        if ($query_debug) {
+            echo "<strong>Últimas 5 ventas en BD:</strong><br>";
+            while ($row_debug = mysqli_fetch_assoc($query_debug)) {
+                echo "ID: {$row_debug['id']}, Usuario: {$row_debug['id_usuario']}, Cliente: {$row_debug['id_cliente']}, Fecha: {$row_debug['fecha']}, Total: \${$row_debug['total']}<br>";
+            }
         }
+        echo "</div>";
     }
 }
 if ($query === false) {
@@ -270,7 +279,8 @@ if ($query_all === false) {
                             // Si la consulta anterior falló, intentar de nuevo
                             // Usar LEFT JOIN para evitar que se pierdan ventas si hay problemas con el cliente
                             // SIN filtro de usuario - mostrar todas las ventas
-                            $query_data = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v LEFT JOIN cliente c ON v.id_cliente = c.idcliente ORDER BY v.fecha DESC, v.id DESC");
+                            // Ordenar por ID DESC (más recientes primero)
+                            $query_data = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v LEFT JOIN cliente c ON v.id_cliente = c.idcliente ORDER BY v.id DESC");
                         }
                         
                         if ($query_data === false) {
@@ -294,10 +304,10 @@ if ($query_all === false) {
                                 $nombre_cliente = !empty($row['nombre']) ? htmlspecialchars($row['nombre']) : '<span class="text-muted">Sin cliente</span>';
                         ?>
                             <tr>
-                                <td><strong>#<?php echo htmlspecialchars($row['id']); ?></strong></td>
+                                <td data-order="<?php echo $row['id']; ?>"><strong>#<?php echo htmlspecialchars($row['id']); ?></strong></td>
                                 <td><i class="fas fa-user-circle text-primary mr-2"></i><?php echo $nombre_cliente; ?></td>
-                                <td><strong class="text-success">$<?php echo number_format($row['total'], 2); ?></strong></td>
-                                <td><i class="far fa-clock text-info mr-1"></i><?php echo $fecha; ?></td>
+                                <td data-order="<?php echo $row['total']; ?>"><strong class="text-success">$<?php echo number_format($row['total'], 2); ?></strong></td>
+                                <td data-order="<?php echo strtotime($fecha_raw); ?>"><i class="far fa-clock text-info mr-1"></i><?php echo $fecha; ?></td>
                                 <td>
                                     <a href="pdf/generar.php?cl=<?php echo $row['id_cliente']; ?>&v=<?php echo $row['id']; ?>" 
                                        target="_blank" 
@@ -327,12 +337,11 @@ if ($query_all === false) {
 <script>
     $(document).ready(function() {
         $('#tbl').DataTable({
-            "order": [[3, "desc"]], // Ordenar por fecha (columna 3) descendente
-            "orderFixed": [[3, "desc"]], // Mantener orden fijo por fecha
+            "order": [[0, "desc"]], // Ordenar por ID (columna 0) descendente - más recientes primero
             "columnDefs": [
                 {
-                    "type": "date",
-                    "targets": 3 // Columna de fecha
+                    "orderDataType": "dom-data-order",
+                    "targets": [0, 2, 3] // Columnas: ID, Total, Fecha
                 }
             ],
             "language": {
