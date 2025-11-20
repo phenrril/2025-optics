@@ -31,6 +31,7 @@ error_log("Lista ventas - Usuario logueado ID: $id_user - Mostrando TODAS las ve
 
 // Consulta para contar total de ventas (SIN filtro de usuario - mostrar todas)
 // Usar LEFT JOIN para evitar que se pierdan ventas si hay problemas con el cliente
+// Ordenar por fecha DESC y luego por ID DESC para asegurar orden correcto
 $query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v LEFT JOIN cliente c ON v.id_cliente = c.idcliente ORDER BY v.fecha DESC, v.id DESC");
 
 // DEBUG: Verificar si hay ventas
@@ -278,12 +279,23 @@ if ($query_all === false) {
                             echo "<tr><td colspan='5' class='alert alert-danger'>$error_msg</td></tr>";
                         } elseif (mysqli_num_rows($query_data) > 0) {
                             while ($row = mysqli_fetch_assoc($query_data)) { 
-                                // Formatear fecha
-                                $fecha = date('d/m/Y H:i', strtotime($row['fecha']));
+                                // Formatear fecha - manejar diferentes formatos
+                                $fecha_raw = $row['fecha'];
+                                // Si la fecha tiene hora, mostrarla; si no, mostrar solo fecha
+                                if (strlen($fecha_raw) > 10) {
+                                    // Tiene hora (formato: Y-m-d H:i:s)
+                                    $fecha = date('d/m/Y H:i', strtotime($fecha_raw));
+                                } else {
+                                    // Solo fecha (formato: Y-m-d)
+                                    $fecha = date('d/m/Y', strtotime($fecha_raw)) . ' 00:00';
+                                }
+                                
+                                // Si el cliente es NULL, mostrar "Sin cliente"
+                                $nombre_cliente = !empty($row['nombre']) ? htmlspecialchars($row['nombre']) : '<span class="text-muted">Sin cliente</span>';
                         ?>
                             <tr>
                                 <td><strong>#<?php echo htmlspecialchars($row['id']); ?></strong></td>
-                                <td><i class="fas fa-user-circle text-primary mr-2"></i><?php echo htmlspecialchars($row['nombre']); ?></td>
+                                <td><i class="fas fa-user-circle text-primary mr-2"></i><?php echo $nombre_cliente; ?></td>
                                 <td><strong class="text-success">$<?php echo number_format($row['total'], 2); ?></strong></td>
                                 <td><i class="far fa-clock text-info mr-1"></i><?php echo $fecha; ?></td>
                                 <td>
@@ -316,6 +328,13 @@ if ($query_all === false) {
     $(document).ready(function() {
         $('#tbl').DataTable({
             "order": [[3, "desc"]], // Ordenar por fecha (columna 3) descendente
+            "orderFixed": [[3, "desc"]], // Mantener orden fijo por fecha
+            "columnDefs": [
+                {
+                    "type": "date",
+                    "targets": 3 // Columna de fecha
+                }
+            ],
             "language": {
                 "decimal": "",
                 "emptyTable": "No hay información",
