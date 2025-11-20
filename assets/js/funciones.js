@@ -179,15 +179,41 @@ document.addEventListener("DOMContentLoaded", function () {
                     console.log("Tipo de respuesta:", typeof response);
                     
                     try {
-                        // Limpiar respuesta de espacios en blanco
-                        response = response.trim();
-                        
-                        // Intentar parsear JSON
+                        // Manejar respuesta que puede venir como string JSON o como objeto
                         let res;
                         if (typeof response === 'string') {
-                            res = JSON.parse(response);
-                        } else {
+                            // Si es string, limpiar y parsear
+                            const responseTrimmed = response.trim();
+                            // Verificar si es JSON válido
+                            if (responseTrimmed.startsWith('{') || responseTrimmed.startsWith('[')) {
+                                res = JSON.parse(responseTrimmed);
+                            } else {
+                                // Si no es JSON, podría ser un mensaje de error
+                                console.error("Respuesta no es JSON válido:", responseTrimmed);
+                                Swal.fire({
+                                    position: 'top-end',
+                                    icon: 'error',
+                                    title: 'Error en la respuesta del servidor',
+                                    text: 'La respuesta no es válida: ' + responseTrimmed.substring(0, 100),
+                                    showConfirmButton: false,
+                                    timer: 4000
+                                });
+                                return;
+                            }
+                        } else if (typeof response === 'object' && response !== null) {
+                            // Si ya es un objeto, usarlo directamente
                             res = response;
+                        } else {
+                            console.error("Tipo de respuesta no esperado:", typeof response, response);
+                            Swal.fire({
+                                position: 'top-end',
+                                icon: 'error',
+                                title: 'Error en la respuesta',
+                                text: 'Tipo de respuesta no válido',
+                                showConfirmButton: false,
+                                timer: 3000
+                            });
+                            return;
                         }
                         
                         console.log("Respuesta parseada:", res);
