@@ -27,7 +27,7 @@ include_once "includes/header.php";
 $id_user = (int) $id_user;
 
 // Consulta para contar total de ventas
-$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente WHERE v.id_usuario = $id_user ORDER BY v.id DESC");
+$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente WHERE v.id_usuario = $id_user ORDER BY v.fecha DESC, v.id DESC");
 if ($query === false) {
     $error_msg = "Error en consulta de ventas: " . mysqli_error($conexion);
     error_log($error_msg);
@@ -246,7 +246,7 @@ if ($query_all === false) {
                             $query_data = $query;
                         } else {
                             // Si la consulta anterior falló, intentar de nuevo
-                            $query_data = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente WHERE v.id_usuario = $id_user ORDER BY v.id DESC");
+                            $query_data = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente WHERE v.id_usuario = $id_user ORDER BY v.fecha DESC, v.id DESC");
                         }
                         
                         if ($query_data === false) {
@@ -288,5 +288,35 @@ if ($query_all === false) {
         </div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        $('#tbl').DataTable({
+            "order": [[3, "desc"]], // Ordenar por fecha (columna 3) descendente
+            "language": {
+                "decimal": "",
+                "emptyTable": "No hay información",
+                "info": "Mostrando _START_ a _END_ de _TOTAL_ Entradas",
+                "infoEmpty": "Mostrando 0 a 0 de 0 Entradas",
+                "infoFiltered": "(Filtrado de _MAX_ total entradas)",
+                "infoPostFix": "",
+                "thousands": ",",
+                "lengthMenu": "Mostrar _MENU_ Entradas",
+                "loadingRecords": "Cargando...",
+                "processing": "Procesando...",
+                "search": "Buscar:",
+                "zeroRecords": "Sin resultados encontrados",
+                "paginate": {
+                    "first": "Primero",
+                    "last": "Último",
+                    "next": "Siguiente",
+                    "previous": "Anterior"
+                }
+            },
+            "pageLength": 25, // Mostrar 25 registros por página
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]]
+        });
+    });
+</script>
 
 <?php include_once "includes/footer.php"; ?>
