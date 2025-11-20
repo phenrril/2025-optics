@@ -26,39 +26,10 @@ include_once "includes/header.php";
 // Sanitizar ID de usuario
 $id_user = (int) $id_user;
 
-// DEBUG: Log para verificar qué usuario está consultando
-error_log("Lista ventas - Usuario logueado ID: $id_user - Mostrando TODAS las ventas (sin filtro de usuario)");
-
 // Consulta para contar total de ventas (SIN filtro de usuario - mostrar todas)
 // Usar LEFT JOIN para evitar que se pierdan ventas si hay problemas con el cliente
-// Ordenar por ID DESC para mostrar las más recientes primero (en caso de que fecha sea igual)
+// Ordenar por ID DESC para mostrar las más recientes primero
 $query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v LEFT JOIN cliente c ON v.id_cliente = c.idcliente ORDER BY v.id DESC");
-
-// DEBUG: Verificar si hay ventas
-if ($query === false) {
-    error_log("ERROR en consulta de ventas: " . mysqli_error($conexion));
-    echo "<div class='alert alert-danger'>Error en consulta: " . mysqli_error($conexion) . "</div>";
-} else {
-    $num_ventas_total = mysqli_num_rows($query);
-    error_log("Total de ventas encontradas (todas): $num_ventas_total");
-    
-    // DEBUG: Mostrar información temporal en la página
-    if ($id_user == 1) {
-        echo "<div class='alert alert-info' style='margin: 20px;'>";
-        echo "<strong>DEBUG (solo admin):</strong><br>";
-        echo "Total ventas en consulta: $num_ventas_total<br>";
-        
-        // Verificar las últimas 5 ventas
-        $query_debug = mysqli_query($conexion, "SELECT id, id_usuario, id_cliente, fecha, total FROM ventas ORDER BY id DESC LIMIT 5");
-        if ($query_debug) {
-            echo "<strong>Últimas 5 ventas en BD:</strong><br>";
-            while ($row_debug = mysqli_fetch_assoc($query_debug)) {
-                echo "ID: {$row_debug['id']}, Usuario: {$row_debug['id_usuario']}, Cliente: {$row_debug['id_cliente']}, Fecha: {$row_debug['fecha']}, Total: \${$row_debug['total']}<br>";
-            }
-        }
-        echo "</div>";
-    }
-}
 if ($query === false) {
     $error_msg = "Error en consulta de ventas: " . mysqli_error($conexion);
     error_log($error_msg);
