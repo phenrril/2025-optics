@@ -175,8 +175,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 },
                 success: function (response) {
+                    console.log("Respuesta recibida:", response);
+                    console.log("Tipo de respuesta:", typeof response);
+                    
                     try {
-                        const res = JSON.parse(response);
+                        // Limpiar respuesta de espacios en blanco
+                        response = response.trim();
+                        
+                        // Intentar parsear JSON
+                        let res;
+                        if (typeof response === 'string') {
+                            res = JSON.parse(response);
+                        } else {
+                            res = response;
+                        }
+                        
+                        console.log("Respuesta parseada:", res);
                         
                         // Verificar si hay error
                         if (res.mensaje && res.mensaje === 'error') {
@@ -188,42 +202,61 @@ document.addEventListener("DOMContentLoaded", function () {
                                 showConfirmButton: false,
                                 timer: 3000
                             })
-                        } else if (res.id_venta) {
+                        } else if (res.id_venta || res.id) {
+                            const idVenta = res.id_venta || res.id;
+                            const idCliente = res.id_cliente || res.id_cliente;
+                            
                             Swal.fire({
                                 position: 'top-end',
                                 icon: 'success',
                                 title: 'Venta Generada',
+                                text: 'Venta #' + idVenta + ' generada exitosamente',
                                 showConfirmButton: false,
                                 timer: 2000
                             })
                             setTimeout(() => {
-                                generarPDF(res.id_cliente, res.id_venta);
+                                if (idCliente && idVenta) {
+                                    generarPDF(idCliente, idVenta);
+                                }
                                 location.reload();
                             }, 300);
                         } else {
+                            console.error("Respuesta inesperada:", res);
                             Swal.fire({
                                 position: 'top-end',
                                 icon: 'error',
                                 title: 'Error inesperado',
-                                text: 'No se pudo procesar la respuesta',
+                                text: 'No se pudo procesar la respuesta. Respuesta: ' + JSON.stringify(res).substring(0, 100),
                                 showConfirmButton: false,
-                                timer: 2000
+                                timer: 4000
                             })
                         }
                     } catch (e) {
+                        console.error("Error al parsear JSON:", e);
+                        console.error("Respuesta original:", response);
                         Swal.fire({
                             position: 'top-end',
                             icon: 'error',
                             title: 'Error al procesar la respuesta',
+                            text: 'Error: ' + e.message + '. Respuesta: ' + response.substring(0, 200),
                             showConfirmButton: false,
-                            timer: 2000
+                            timer: 5000
                         })
                     }
                 
                 },
                
-                error: function (error) {
-
+                error: function (xhr, status, error) {
+                    console.error("Error en AJAX:", status, error);
+                    console.error("Respuesta del servidor:", xhr.responseText);
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Error de conexión',
+                        text: 'No se pudo conectar con el servidor. Error: ' + error,
+                        showConfirmButton: false,
+                        timer: 3000
+                    })
                 }
             });
         } else {

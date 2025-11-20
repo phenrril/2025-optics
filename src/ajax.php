@@ -369,8 +369,29 @@ if (isset($_GET['q'])) {
     }
 
     // Asegurar que siempre se devuelva una respuesta JSON válida
-    header('Content-Type: application/json');
-    echo json_encode($msg);
+    // Limpiar cualquier output previo
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    
+    header('Content-Type: application/json; charset=utf-8');
+    
+    // Verificar que $msg esté definido
+    if (!isset($msg)) {
+        $msg = array('mensaje' => 'error', 'detalle' => 'Error desconocido al procesar la venta');
+    }
+    
+    $json_response = json_encode($msg, JSON_UNESCAPED_UNICODE);
+    
+    // Verificar si hubo error al codificar JSON
+    if ($json_response === false) {
+        error_log("Error al codificar JSON: " . json_last_error_msg());
+        $msg = array('mensaje' => 'error', 'detalle' => 'Error al procesar la respuesta del servidor');
+        $json_response = json_encode($msg, JSON_UNESCAPED_UNICODE);
+    }
+    
+    error_log("Respuesta JSON enviada: " . $json_response);
+    echo $json_response;
     die();
 
 // Registrar detalle en tabla temporal
