@@ -26,8 +26,29 @@ include_once "includes/header.php";
 // Sanitizar ID de usuario
 $id_user = (int) $id_user;
 
-// Consulta para contar total de ventas
-$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente WHERE v.id_usuario = $id_user ORDER BY v.fecha DESC, v.id DESC");
+// DEBUG: Log para verificar qué usuario está consultando
+error_log("Lista ventas - Usuario logueado ID: $id_user - Mostrando TODAS las ventas (sin filtro de usuario)");
+
+// Consulta para contar total de ventas (SIN filtro de usuario - mostrar todas)
+// Usar LEFT JOIN para evitar que se pierdan ventas si hay problemas con el cliente
+$query = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v LEFT JOIN cliente c ON v.id_cliente = c.idcliente ORDER BY v.fecha DESC, v.id DESC");
+
+// DEBUG: Verificar si hay ventas
+if ($query === false) {
+    error_log("Error en consulta de ventas: " . mysqli_error($conexion));
+} else {
+    $num_ventas_total = mysqli_num_rows($query);
+    error_log("Total de ventas encontradas (todas): $num_ventas_total");
+    
+    // DEBUG: Verificar las últimas 5 ventas y sus id_usuario
+    $query_debug = mysqli_query($conexion, "SELECT id, id_usuario, fecha, total FROM ventas ORDER BY fecha DESC, id DESC LIMIT 5");
+    if ($query_debug) {
+        error_log("Últimas 5 ventas en BD:");
+        while ($row_debug = mysqli_fetch_assoc($query_debug)) {
+            error_log("  - Venta ID: {$row_debug['id']}, Usuario: {$row_debug['id_usuario']}, Fecha: {$row_debug['fecha']}, Total: {$row_debug['total']}");
+        }
+    }
+}
 if ($query === false) {
     $error_msg = "Error en consulta de ventas: " . mysqli_error($conexion);
     error_log($error_msg);
@@ -37,8 +58,8 @@ if ($query === false) {
     $total_ventas = mysqli_num_rows($query);
 }
 
-// Consulta para total general
-$query_all = mysqli_query($conexion, "SELECT SUM(total) as total_general FROM ventas WHERE id_usuario = $id_user");
+// Consulta para total general (SIN filtro de usuario - mostrar todas)
+$query_all = mysqli_query($conexion, "SELECT SUM(total) as total_general FROM ventas");
 if ($query_all === false) {
     $error_msg = "Error en consulta de total general: " . mysqli_error($conexion);
     error_log($error_msg);
@@ -207,7 +228,7 @@ if ($query_all === false) {
     <div class="page-header">
         <div>
             <h2><i class="fas fa-receipt mr-2"></i> Lista de Ventas</h2>
-            <p class="mb-0 mt-2"><i class="fas fa-calendar-alt mr-1"></i> Historial de ventas realizadas</p>
+            <p class="mb-0 mt-2"><i class="fas fa-calendar-alt mr-1"></i> Historial de todas las ventas realizadas</p>
         </div>
         <div>
             <div class="stats-box">
@@ -246,7 +267,9 @@ if ($query_all === false) {
                             $query_data = $query;
                         } else {
                             // Si la consulta anterior falló, intentar de nuevo
-                            $query_data = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v INNER JOIN cliente c ON v.id_cliente = c.idcliente WHERE v.id_usuario = $id_user ORDER BY v.fecha DESC, v.id DESC");
+                            // Usar LEFT JOIN para evitar que se pierdan ventas si hay problemas con el cliente
+                            // SIN filtro de usuario - mostrar todas las ventas
+                            $query_data = mysqli_query($conexion, "SELECT v.*, c.idcliente, c.nombre FROM ventas v LEFT JOIN cliente c ON v.id_cliente = c.idcliente ORDER BY v.fecha DESC, v.id DESC");
                         }
                         
                         if ($query_data === false) {
