@@ -18,9 +18,11 @@ conexion_local.php
 /storage/logs/
 
 # Base de datos
-*.sql
 *.sqlite
 mysql-data/
+# Ignorar SQL genérico pero incluir el script de setup de facturación
+*.sql
+!sql/setup_facturacion_electronica.sql
 
 # Sistema operativo
 .DS_Store
