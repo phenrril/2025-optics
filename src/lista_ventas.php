@@ -243,7 +243,7 @@ if ($query_all === false) {
     <div class="card-modern">
         <div class="card-body-modern">
             <div class="table-responsive">
-                <table class="table table-modern" id="tbl">
+                <table class="table table-modern custom-dt-init" id="tbl">
                     <thead>
                         <tr>
                             <th><i class="fas fa-hashtag mr-1"></i> ID</th>
@@ -357,13 +357,7 @@ if ($query_all === false) {
 <script>
     $(document).ready(function() {
         $('#tbl').DataTable({
-            "order": [[0, "desc"]], // Ordenar por ID (columna 0) descendente - más recientes primero
-            "columnDefs": [
-                {
-                    "orderDataType": "dom-data-order",
-                    "targets": [0, 2, 3] // Columnas: ID, Total, Fecha
-                }
-            ],
+            "order": [[0, "desc"]],
             "language": {
                 "decimal": "",
                 "emptyTable": "No hay información",

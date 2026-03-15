@@ -134,23 +134,17 @@ if (isset($_GET['q'])) {
         die();
     }
 
-    // Aplicar descuento y obra social
+    // Aplicar obra social y descuento
     $subtotal = $total_pagar - $obrasocial;
     $total = $subtotal * $descuento;
-    
-    // Validar que el total final sea mayor a 0
+
     if ($total <= 0) {
         echo json_encode(array('mensaje' => 'error', 'detalle' => 'El total de la venta después de aplicar descuentos debe ser mayor a cero'));
         die();
     }
 
-    // Validar que el abono no exceda el total
-    if ($abona > $total) {
-        echo json_encode(array('mensaje' => 'error', 'detalle' => 'El monto a abonar excede el total'));
-        die();
-    }
-
-    $resto = $total - $abona;
+    // Si abona de más, resto queda en 0 (pagó todo)
+    $resto = max(0, $total - $abona);
 
     // INICIAR TRANSACCIÓN
     mysqli_begin_transaction($conexion);
@@ -392,6 +386,29 @@ if (isset($_GET['q'])) {
     
     error_log("Respuesta JSON enviada: " . $json_response);
     echo $json_response;
+    die();
+
+// Actualizar precio en detalle temporal (sin afectar la base de productos)
+} else if (isset($_POST['update_precio'])) {
+    $id_detalle = intval($_POST['id']);
+    $nuevo_precio = floatval($_POST['precio']);
+
+    if ($nuevo_precio < 0) {
+        echo 'error';
+        die();
+    }
+
+    $verificar = mysqli_query($conexion, "SELECT * FROM detalle_temp WHERE id = $id_detalle AND id_usuario = $id_user");
+    $datos = mysqli_fetch_assoc($verificar);
+
+    if ($datos) {
+        $cantidad = intval($datos['cantidad']);
+        $nuevo_total = $nuevo_precio * $cantidad;
+        $query = mysqli_query($conexion, "UPDATE detalle_temp SET precio_venta = $nuevo_precio, total = $nuevo_total WHERE id = $id_detalle AND id_usuario = $id_user");
+        echo $query ? 'ok' : 'error';
+    } else {
+        echo 'error';
+    }
     die();
 
 // Registrar detalle en tabla temporal
