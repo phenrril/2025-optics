@@ -4,6 +4,12 @@
  * Formato oficial según normativa ARCA/AFIP
  */
 
+session_start();
+if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
+    header('HTTP/1.1 403 Forbidden');
+    die('Acceso denegado. Debe iniciar sesión para ver este documento.');
+}
+
 require_once '../../conexion.php';
 require_once 'fpdf/fpdf.php';
 require_once '../classes/FacturacionElectronica.php';

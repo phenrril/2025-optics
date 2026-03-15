@@ -15,7 +15,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-    $('#tbl').DataTable();
+    if ($('#tbl').length && !$('#tbl').hasClass('custom-dt-init')) {
+        $('#tbl').DataTable();
+    }
     $(".confirmar").submit(function (e) {
         e.preventDefault();
         Swal.fire({
@@ -411,87 +413,51 @@ function calcularVenta() {
     var abona = parseFloat(document.getElementById('abona').value) || 0;
     var descuento = parseFloat(document.getElementById('porc').value);
     var obrasocial = parseFloat(document.getElementById('obra_social').value) || 0;
-    
-    // Obtener total actual recalculando desde la tabla
-    var total_sin_descuento = 0;
+
+    var total_productos = 0;
     var filas = document.querySelectorAll("#tblDetalle tbody tr");
-    
     filas.forEach(function (e) {
         var columnas = e.querySelectorAll("td");
         if (columnas.length < 5) return;
-        
         var importe = parseFloat(columnas[4].textContent.replace('$', '').replace(',', ''));
         if (!isNaN(importe) && importe > 0) {
-            total_sin_descuento += importe;
+            total_productos += importe;
         }
     });
-    
-    console.log('Total sin descuento:', total_sin_descuento);
-    
-    // Validar campos
+
     if (abona < 0) {
-        Swal.fire({
-            position: 'top-end',
-            icon: 'error',
-            title: 'El campo abona no puede ser negativo',
-            showConfirmButton: false,
-            timer: 2000
-        });
-        return;
+        document.getElementById('abona').value = 0;
+        abona = 0;
     }
-    
     if (obrasocial < 0) {
-        Swal.fire({
-            position: 'top-end',
-            icon: 'error',
-            title: 'Obra social no puede ser negativa',
-            showConfirmButton: false,
-            timer: 2000
-        });
+        document.getElementById('obra_social').value = 0;
         obrasocial = 0;
     }
-    
-    if (obrasocial > total_sin_descuento) {
-        Swal.fire({
-            position: 'top-end',
-            icon: 'error',
-            title: 'Obra Social es mayor que Total',
-            showConfirmButton: false,
-            timer: 2000
-        });
-        return; 
+
+    if (obrasocial > total_productos) {
+        Swal.fire({ position: 'top-end', icon: 'warning', title: 'La Obra Social no puede superar el total de productos', showConfirmButton: false, timer: 2500 });
+        return;
     }
-    
-    if ((obrasocial + abona) > total_sin_descuento) {
-        Swal.fire({
-            position: 'top-end',
-            icon: 'error',
-            title: 'Obra Social más Abona es mayor que Total',
-            showConfirmButton: false,
-            timer: 2000
-        });
-        return; 
-    }
-    
-    // Calcular con descuento
-    var total_con_descuento = (total_sin_descuento - obrasocial) * descuento;
-    var resto = total_con_descuento - abona;
-    
-    // Actualizar campos en tfoot
+
+    // Total final = (productos - obra social) × factor descuento
+    var total_final = (total_productos - obrasocial) * descuento;
+    // Resto = lo que queda por pagar (si abona de más, queda en 0)
+    var resto = Math.max(0, total_final - abona);
+
+    // Actualizar tfoot de la tabla
     var tfootRows = document.querySelectorAll("#tblDetalle tfoot tr");
     if (tfootRows.length > 0) {
         var cells = tfootRows[0].querySelectorAll("td");
         if (cells.length > 1) {
-            cells[1].innerHTML = '<strong>$' + total_con_descuento.toFixed(2) + '</strong>';
+            cells[1].innerHTML = '<strong>$' + total_final.toFixed(2) + '</strong>';
         }
     }
-    
+
     document.getElementById('resto').value = resto.toFixed(2);
-    
-    // Actualizar total display
+
     var totalDisplay = document.getElementById('total-amount');
     if (totalDisplay) {
-        totalDisplay.textContent = '$' + total_con_descuento.toFixed(2);
+        totalDisplay.textContent = '$' + total_final.toFixed(2);
     }
 }
 
@@ -595,8 +561,22 @@ function listar() {
                     <td><span class="badge badge-modern" style="background: #667eea; color: white;">${row['codigo'] || row['id']}</span></td>
                     <td><strong>${row['descripcion']}</strong>${costoBadge}</td>
                     <td><span class="badge badge-modern" style="background: #28a745; color: white;">${row['cantidad']}</span></td>
-                    <td>$${parseFloat(row['precio_venta']).toFixed(2)}</td>
-                    <td><strong>$${parseFloat(row['sub_total']).toFixed(2)}</strong></td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <span style="color:#555; font-weight:600;">$</span>
+                            <input type="number"
+                                   class="precio-editable-input"
+                                   value="${parseInt(row['precio_venta'])}"
+                                   min="0" step="any"
+                                   data-id="${row['id']}"
+                                   data-original="${parseInt(row['precio_venta'])}"
+                                   style="width:110px; border:1.5px dashed #b0bec5; border-radius:6px; padding:4px 8px; font-size:0.9rem; background:#fffde7; outline:none;"
+                                   title="Podés editar el precio para esta venta sin modificar el catálogo"
+                                   onchange="actualizarPrecio(${row['id']}, this.value, this)">
+                            <i class="fas fa-pen" style="color:#b0bec5; font-size:0.7rem;" title="Precio editable"></i>
+                        </div>
+                    </td>
+                    <td><strong class="subtotal-item">$${parseFloat(row['sub_total']).toFixed(2)}</strong></td>
                     <td>
                         <button class="btn btn-modern btn-modern-danger btn-sm" type="button" onclick="deleteDetalle(${row['id']})">
                             <i class="fas fa-trash-alt"></i>
@@ -713,6 +693,73 @@ function registrarDetalleManual(id, cant, precio) {
         });
     }
 }
+function actualizarPrecio(id, nuevoPrecio, inputEl) {
+    var precio = parseFloat(nuevoPrecio);
+
+    if (isNaN(precio) || precio < 0) {
+        inputEl.value = inputEl.dataset.original;
+        Swal.fire({
+            position: 'top-end',
+            icon: 'warning',
+            title: 'Precio inválido',
+            showConfirmButton: false,
+            timer: 2000
+        });
+        return;
+    }
+
+    $.ajax({
+        url: "ajax.php",
+        type: "POST",
+        data: {
+            update_precio: true,
+            id: id,
+            precio: precio
+        },
+        success: function(response) {
+            if (response === 'ok') {
+                inputEl.dataset.original = precio.toFixed(2);
+                var fila = inputEl.closest('tr');
+                var cantBadge = fila.querySelector('td:nth-child(3) .badge');
+                var cantidad = cantBadge ? parseInt(cantBadge.textContent) : 1;
+                var nuevoSubtotal = precio * cantidad;
+                var subtotalEl = fila.querySelector('.subtotal-item');
+                if (subtotalEl) {
+                    subtotalEl.textContent = '$' + nuevoSubtotal.toFixed(2);
+                }
+                calcular();
+                calcularVenta();
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Precio actualizado',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } else {
+                inputEl.value = inputEl.dataset.original;
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Error al actualizar el precio',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        },
+        error: function() {
+            inputEl.value = inputEl.dataset.original;
+            Swal.fire({
+                position: 'top-end',
+                icon: 'error',
+                title: 'Error de conexión',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
+    });
+}
+
 function deleteDetalle(id) {
     let detalle = 'Eliminar'
     $.ajax({
