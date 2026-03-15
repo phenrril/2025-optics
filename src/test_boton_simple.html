@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Botón Instalador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .btn-test {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-test:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f0f0f0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test del Instalador</h1>
+    
+    <div style="margin: 30px 0;">
+        <button id="btnTest" class="btn-test">
+            <i class="fas fa-rocket"></i> Click Aquí para Probar
+        </button>
+    </div>
+    
+    <div id="resultado" class="result" style="display: none;"></div>
+    
+    <h2>Diagnóstico:</h2>
+    <div id="diagnostico"></div>
+
+    <!-- Cargar jQuery -->
+    <script src="../assets/js/jquery-3.6.0.min.js"></script>
+    
+    <!-- Cargar SweetAlert2 -->
+    <script src="../assets/js/sweetalert2.all.min.js"></script>
+    
+    <!-- Cargar Font Awesome -->
+    <script src="../assets/js/all.min.js"></script>
+    
+    <script>
+        // Esperar a que TODO esté cargado
+        window.addEventListener('load', function() {
+            let diagnostico = '';
+            
+            // Test 1: jQuery
+            if (typeof jQuery !== 'undefined') {
+                diagnostico += '✅ jQuery cargado: ' + jQuery.fn.jquery + '<br>';
+            } else {
+                diagnostico += '❌ jQuery NO cargado<br>';
+            }
+            
+            // Test 2: SweetAlert2
+            if (typeof Swal !== 'undefined') {
+                diagnostico += '✅ SweetAlert2 cargado<br>';
+            } else {
+                diagnostico += '❌ SweetAlert2 NO cargado<br>';
+            }
+            
+            // Test 3: Botón
+            if ($('#btnTest').length > 0) {
+                diagnostico += '✅ Botón encontrado<br>';
+            } else {
+                diagnostico += '❌ Botón NO encontrado<br>';
+            }
+            
+            $('#diagnostico').html(diagnostico);
+            
+            // Agregar evento al botón
+            $('#btnTest').click(function() {
+                console.log('🚀 Click detectado');
+                
+                $('#resultado').show().removeClass('error').addClass('success').html('✅ ¡El botón funciona correctamente!');
+                
+                // Mostrar SweetAlert
+                Swal.fire({
+                    title: '¡Funciona!',
+                    text: 'jQuery y SweetAlert2 están cargados correctamente',
+                    icon: 'success',
+                    confirmButtonColor: '#667eea'
+                });
+            });
+            
+            console.log('✅ Test inicializado correctamente');
+        });
+    </script>
+</body>
+</html>
+

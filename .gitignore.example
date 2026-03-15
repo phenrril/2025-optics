@@ -50,6 +50,7 @@ backup/
 # PDFs generados
 /pdfs_generados/
 /facturas_generadas/
+/storage/facturas_pdf/
 
 # Cache
 cache/
@@ -68,3 +69,7 @@ package-lock.json
 /uploads/
 /imagenes/clientes/
 /imagenes/productos/
+
+# Archivo de instalación
+.facturacion_installed
+
