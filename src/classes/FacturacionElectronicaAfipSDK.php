@@ -30,7 +30,21 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
             throw new \Exception("No se encontró la clave privada: {$key_path}");
         }
 
-        $ta_folder = __DIR__ . '/../../storage/afip_ta/';
+        // Detectar si storage/afip_ta existe fuera de public_html (cPanel)
+        // o dentro del proyecto (Docker/desarrollo).
+        // Desde src/classes/:
+        //   3 niveles arriba → home del usuario en cPanel (/home/user/)
+        //   2 niveles arriba → raíz del proyecto en Docker (/var/www/html/)
+        $storage_cpanel = realpath(__DIR__ . '/../../../') . '/storage/afip_ta/';
+        $storage_local  = realpath(__DIR__ . '/../../') . '/storage/afip_ta/';
+
+        if (is_dir(dirname($storage_cpanel))) {
+            // Existe el directorio padre (home del usuario en cPanel)
+            $ta_folder = $storage_cpanel;
+        } else {
+            $ta_folder = $storage_local;
+        }
+
         if (!is_dir($ta_folder)) {
             mkdir($ta_folder, 0755, true);
         }
