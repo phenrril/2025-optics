@@ -202,6 +202,20 @@ if ($query_all === false) {
         width: 100%;
     }
 }
+
+/* Botones de facturación responsivos */
+@media (max-width: 576px) {
+    .table-modern tbody td > div {
+        flex-direction: column !important;
+        width: 100%;
+    }
+    
+    .table-modern tbody td > div > button,
+    .table-modern tbody td > div > a {
+        width: 100% !important;
+        margin-bottom: 3px !important;
+    }
+}
 </style>
 
 <div class="ventas-container fade-in-container">
@@ -236,6 +250,7 @@ if ($query_all === false) {
                             <th><i class="fas fa-user mr-1"></i> Cliente</th>
                             <th><i class="fas fa-dollar-sign mr-1"></i> Total</th>
                             <th><i class="fas fa-calendar mr-1"></i> Fecha</th>
+                            <th><i class="fas fa-file-invoice mr-1"></i> Factura</th>
                             <th><i class="fas fa-file-pdf mr-1"></i> Recibo</th>
                         </tr>
                     </thead>
@@ -280,6 +295,40 @@ if ($query_all === false) {
                                 <td data-order="<?php echo $row['total']; ?>"><strong class="text-success">$<?php echo number_format($row['total'], 2); ?></strong></td>
                                 <td data-order="<?php echo strtotime($fecha_raw); ?>"><i class="far fa-clock text-info mr-1"></i><?php echo $fecha; ?></td>
                                 <td>
+                                    <?php 
+                                    // Verificar si existe factura electrónica
+                                    $id_venta = $row['id'];
+                                    $query_factura = mysqli_query($conexion, "SELECT * FROM facturas_electronicas WHERE id_venta = $id_venta AND estado = 'aprobado' LIMIT 1");
+                                    $tiene_factura = ($query_factura && mysqli_num_rows($query_factura) > 0);
+                                    
+                                    if ($tiene_factura) {
+                                        $factura_data = mysqli_fetch_assoc($query_factura);
+                                    ?>
+                                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                            <button onclick="verDetallesFactura(<?php echo $row['id']; ?>)" 
+                                                    class="btn btn-sm"
+                                                    style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; padding: 6px 12px; border-radius: 6px;"
+                                                    title="Ver detalles de factura">
+                                                <i class="fas fa-check-circle mr-1"></i> Facturado
+                                            </button>
+                                            <a href="pdf/generar_factura_electronica.php?v=<?php echo $row['id']; ?>" 
+                                               target="_blank"
+                                               class="btn btn-sm"
+                                               style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); color: white; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none;"
+                                               title="Descargar factura electrónica PDF">
+                                                <i class="fas fa-file-pdf mr-1"></i> PDF
+                                            </a>
+                                        </div>
+                                    <?php } else { ?>
+                                        <button onclick="generarFacturaElectronica(<?php echo $row['id']; ?>)" 
+                                                class="btn btn-sm"
+                                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 6px 12px; border-radius: 6px;"
+                                                title="Generar factura electrónica">
+                                            <i class="fas fa-file-invoice mr-1"></i> Facturar
+                                        </button>
+                                    <?php } ?>
+                                </td>
+                                <td>
                                     <a href="pdf/generar.php?cl=<?php echo $row['id_cliente']; ?>&v=<?php echo $row['id']; ?>" 
                                        target="_blank" 
                                        class="btn btn-action-pdf btn-sm"
@@ -291,7 +340,7 @@ if ($query_all === false) {
                         <?php } 
                         } else { ?>
                             <tr>
-                                <td colspan="5" class="empty-state">
+                                <td colspan="6" class="empty-state">
                                     <i class="fas fa-receipt"></i>
                                     <h5 class="mt-3 mb-2">No hay ventas registradas</h5>
                                     <p class="text-muted">Las ventas que realices aparecerán aquí</p>
@@ -340,5 +389,8 @@ if ($query_all === false) {
         });
     });
 </script>
+
+<!-- Incluir script de facturación -->
+<script src="../assets/js/facturacion.js"></script>
 
 <?php include_once "includes/footer.php"; ?>

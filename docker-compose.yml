@@ -28,6 +28,12 @@ services:
       - "8000:80"
     volumes:
       - .:/var/www/html
+      # Certificados AFIP/ARCA montados como solo lectura dentro del contenedor
+      # Copiá tus archivos .crt y .key a la carpeta ./certificados-afip en tu máquina host
+      # y en la configuración del sistema usá las rutas:
+      #   /var/www/certificados/FACTURACION_3b00192202ee9600.crt
+      #   /var/www/certificados/MiClavePrivada.key
+      - ./certificados-afip:/var/www/certificados:ro
     depends_on:
       db:
         condition: service_healthy

@@ -7,9 +7,11 @@ RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/Allo
 # Instalar extensiones PHP necesarias
 RUN apt-get update && apt-get install -y \
     libicu-dev \
+    libxml2-dev \
     unzip \
     && docker-php-ext-install mysqli \
     && docker-php-ext-install pdo_mysql \
+    && docker-php-ext-install soap \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
