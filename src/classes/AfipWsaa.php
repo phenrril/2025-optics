@@ -43,7 +43,8 @@ class AfipWsaa {
      * Usa el Ticket de Acceso (TA) cacheado si todavía es válido.
      */
     public function getTicket($service = 'wsfe') {
-        $ta_file = $this->ta_folder . "TA_{$service}.xml";
+        $env     = $this->production ? 'prod' : 'test';
+        $ta_file = $this->ta_folder . "TA_{$service}_{$env}.xml";
 
         if (file_exists($ta_file)) {
             try {
