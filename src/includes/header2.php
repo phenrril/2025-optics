@@ -89,7 +89,7 @@ if (empty($_SESSION['active'])) {
                             Usuarios
                         </a>
                         
-                        <a class="nav-link" href="config.php">
+                        <a class="nav-link" href="configuracion_sistema.php">
                             <div class="sb-nav-link-icon"><i class="fas fa-cogs"></i></div>
                             Configuración
                         </a>

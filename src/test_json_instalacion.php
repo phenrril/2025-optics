@@ -147,7 +147,7 @@ header('Content-Type: text/html; charset=utf-8');
         <button onclick="location.reload();" style="padding: 10px 20px; background: #00ff00; color: #000; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
             🔄 Ejecutar Nuevamente
         </button>
-        <a href="config.php" style="margin-left: 10px; padding: 10px 20px; background: #0080ff; color: #fff; text-decoration: none; border-radius: 5px; display: inline-block;">
+        <a href="configuracion_sistema.php" style="margin-left: 10px; padding: 10px 20px; background: #0080ff; color: #fff; text-decoration: none; border-radius: 5px; display: inline-block;">
             🏠 Volver a Configuración
         </a>
     </div>
