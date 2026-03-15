@@ -311,42 +311,44 @@ $log[] = "━━━━━━━━━━━━━━━━━━━━━━━�
 $composer_path = __DIR__ . '/../composer.phar';
 $has_composer = false;
 
-$log[] = "🔍 Buscando Composer global...";
-// Verificar si composer está disponible globalmente
-@exec('composer --version 2>&1', $output, $return_code);
-if ($return_code === 0 && !empty($output)) {
-    $has_composer = true;
-    $log[] = "✅ Composer encontrado (instalación global)";
-    $log[] = "   Versión: " . (isset($output[0]) ? $output[0] : 'Desconocida');
+// Verificar si exec() está disponible (en cPanel/hosting compartido suele estar deshabilitado)
+$exec_disponible = function_exists('exec') && !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))));
+
+if (!$exec_disponible) {
+    $log[] = "ℹ️ exec() no está disponible en este servidor (hosting compartido)";
+    $log[] = "ℹ️ PASO 3: Se omite verificación de Composer (no necesario con implementación actual)";
+    $warnings[] = "⚠️ exec() deshabilitado: Si necesitás instalar dependencias Composer, hacelo por SSH o desde el panel de cPanel";
 } else {
-    $log[] = "❌ Composer no encontrado globalmente";
-    $log[] = "🔍 Buscando Composer local en: " . basename(dirname($composer_path));
-    
-    if (file_exists($composer_path)) {
+    $log[] = "🔍 Buscando Composer global...";
+    @exec('composer --version 2>&1', $output, $return_code);
+    if ($return_code === 0 && !empty($output)) {
         $has_composer = true;
-        $log[] = "✅ Composer encontrado (archivo local: composer.phar)";
+        $log[] = "✅ Composer encontrado (instalación global)";
+        $log[] = "   Versión: " . (isset($output[0]) ? $output[0] : 'Desconocida');
     } else {
-        $log[] = "❌ Composer local no encontrado";
-        $log[] = "⏳ Intentando descargar Composer...";
-        
-        // Intentar descargar Composer
-        $installer = @file_get_contents('https://getcomposer.org/installer');
-        if ($installer) {
-            @file_put_contents(__DIR__ . '/../composer-setup.php', $installer);
-            
-            // Instalar Composer
-            @exec('php ' . __DIR__ . '/../composer-setup.php 2>&1', $composer_output, $composer_code);
-            
-            if (file_exists($composer_path)) {
-                $has_composer = true;
-                $log[] = "✅ Composer descargado exitosamente";
-                @unlink(__DIR__ . '/../composer-setup.php');
-            } else {
-                $warnings[] = "⚠️ No se pudo descargar Composer automáticamente";
-                $warnings[] = "   Instalá manualmente: curl -sS https://getcomposer.org/installer | php";
-            }
+        $log[] = "❌ Composer no encontrado globalmente";
+        $log[] = "🔍 Buscando Composer local en: " . basename(dirname($composer_path));
+
+        if (file_exists($composer_path)) {
+            $has_composer = true;
+            $log[] = "✅ Composer encontrado (archivo local: composer.phar)";
         } else {
-            $warnings[] = "⚠️ No se pudo conectar para descargar Composer";
+            $log[] = "❌ Composer local no encontrado";
+            $log[] = "⏳ Intentando descargar Composer...";
+            $installer = @file_get_contents('https://getcomposer.org/installer');
+            if ($installer) {
+                @file_put_contents(__DIR__ . '/../composer-setup.php', $installer);
+                @exec('php ' . __DIR__ . '/../composer-setup.php 2>&1', $composer_output, $composer_code);
+                if (file_exists($composer_path)) {
+                    $has_composer = true;
+                    $log[] = "✅ Composer descargado exitosamente";
+                    @unlink(__DIR__ . '/../composer-setup.php');
+                } else {
+                    $warnings[] = "⚠️ No se pudo descargar Composer automáticamente";
+                }
+            } else {
+                $warnings[] = "⚠️ No se pudo conectar para descargar Composer";
+            }
         }
     }
 }
@@ -359,80 +361,38 @@ $log[] = "━━━━━━━━━━━━━━━━━━━━━━━�
 $log[] = "📚 PASO 4: Instalando dependencias PHP...";
 $log[] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
-if ($has_composer) {
+// Verificar si vendor/autoload.php ya existe (dependencias ya instaladas)
+$project_root = realpath(__DIR__ . '/..');
+$vendor_exists = $project_root && file_exists($project_root . '/vendor/autoload.php');
+
+if ($vendor_exists) {
+    $log[] = "✅ vendor/autoload.php ya existe - dependencias previamente instaladas";
+} elseif (!$exec_disponible) {
+    $log[] = "ℹ️ PASO 4: exec() no disponible - omitiendo instalación automática de Composer";
+    $log[] = "ℹ️ Las clases AFIP (AfipWsaa.php / AfipWsfe.php) no requieren Composer";
+    $warnings[] = "⚠️ Si necesitás vendor/: instalá Composer manualmente por SSH en el servidor";
+} elseif ($has_composer) {
     $log[] = "✅ Composer disponible, procediendo con instalación...";
-    
-    $composer_json = __DIR__ . '/../composer.json';
-    $log[] = "🔍 Buscando composer.json...";
-    
-    if (!file_exists($composer_json)) {
-        $log[] = "❌ composer.json no encontrado";
-        $log[] = "📝 Creando composer.json...";
-        
-        // Crear composer.json básico
-        $composer_config = [
-            'name' => 'optica/sistema-ventas',
-            'description' => 'Sistema de ventas con facturación electrónica',
-            'type' => 'project',
-            'require' => [
-                'php' => '>=7.4'
-            ],
-            'autoload' => [
-                'psr-4' => [
-                    'App\\' => 'src/classes/'
-                ]
-            ]
-        ];
-        
-        if (@file_put_contents($composer_json, json_encode($composer_config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))) {
-            $log[] = "✅ composer.json creado exitosamente";
-        } else {
-            $warnings[] = "⚠️ No se pudo crear composer.json";
-            $log[] = "❌ Error al crear composer.json";
-        }
-    } else {
-        $log[] = "✅ composer.json ya existe";
-    }
-    
-    // Ejecutar composer install
-    $project_root = realpath(__DIR__ . '/..');
-    $log[] = "📂 Ruta del proyecto: $project_root";
-    
     if ($project_root) {
         @chdir($project_root);
-        $log[] = "💿 Directorio cambiado a: " . getcwd();
         $log[] = "⏳ Ejecutando: composer install --no-dev";
-        
-        // Intentar instalar dependencias
         if (file_exists($composer_path)) {
-            $log[] = "   Usando: php composer.phar";
             @exec('php composer.phar install --no-dev 2>&1', $install_output, $install_code);
         } else {
-            $log[] = "   Usando: composer global";
             @exec('composer install --no-dev 2>&1', $install_output, $install_code);
         }
-        
-        $log[] = "   Código de salida: $install_code";
-        
-        // Verificar si se instaló
         if (file_exists($project_root . '/vendor/autoload.php')) {
             $log[] = "✅ Dependencias instaladas correctamente";
-            $log[] = "✅ vendor/autoload.php existe";
         } else {
-            $warnings[] = "⚠️ Dependencias no instaladas (ejecutá manualmente: composer install)";
-            $log[] = "⚠️ vendor/autoload.php NO existe";
+            $warnings[] = "⚠️ Dependencias no instaladas. Ejecutá manualmente: composer install";
             if (!empty($install_output)) {
                 $log[] = "   Output: " . implode(' | ', array_slice($install_output, 0, 3));
             }
         }
-    } else {
-        $warnings[] = "⚠️ No se pudo determinar la ruta del proyecto";
-        $log[] = "❌ Error: realpath() devolvió false";
     }
 } else {
-    $warnings[] = "⚠️ Composer no disponible - Instalación de SDK pendiente";
-    $log[] = "⚠️ Composer no está instalado";
-    $log[] = "💡 Solución: Instalá manualmente con: curl -sS https://getcomposer.org/installer | php";
+    $log[] = "ℹ️ Composer no disponible - no se instalarán dependencias adicionales";
+    $log[] = "ℹ️ Las clases AFIP propias no requieren Composer para funcionar";
 }
 
 // =====================================================
