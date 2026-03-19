@@ -355,7 +355,7 @@ if ($query_all === false) {
 </div>
 
 <script>
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function() {
         $('#tbl').DataTable({
             "order": [[0, "desc"]],
             "language": {
@@ -378,7 +378,7 @@ if ($query_all === false) {
                     "previous": "Anterior"
                 }
             },
-            "pageLength": 25, // Mostrar 25 registros por página
+            "pageLength": 25,
             "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]]
         });
     });
