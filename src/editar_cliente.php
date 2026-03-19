@@ -1,54 +1,64 @@
-<?php include_once "includes/header.php";
+<?php
+session_start();
 include "../conexion.php";
+
+if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
+    header("Location: ../");
+    exit();
+}
+
 $id_user = $_SESSION['idUser'];
 $permiso = "clientes";
-$sql = mysqli_query($conexion, "SELECT p.*, d.* FROM permisos p INNER JOIN detalle_permisos d ON p.id = d.id_permiso WHERE d.id_usuario = $id_user AND p.nombre = '$permiso'");
+$permiso_escaped = mysqli_real_escape_string($conexion, $permiso);
+$sql = mysqli_query($conexion, "SELECT p.*, d.* FROM permisos p INNER JOIN detalle_permisos d ON p.id = d.id_permiso WHERE d.id_usuario = $id_user AND p.nombre = '$permiso_escaped'");
 $existe = mysqli_fetch_all($sql);
 if (empty($existe) && $id_user != 1) {
     header("Location: permisos.php");
+    exit();
 }
-if (!empty($_POST)) {
-    $alert = "";
-    if (empty($_POST['nombre']) || empty($_POST['telefono']) || empty($_POST['direccion'])) {
-        $alert = '<div class="alert alert-danger" role="alert">Complete los campos requeridos</div>';
-    } else {
-        $idcliente = $_POST['id'];
-        $nombre = $_POST['nombre'];
-        $telefono = $_POST['telefono'];
-        $direccion = $_POST['direccion'];
-        $dni = $_POST['dni'];
-        $obrasocial = $_POST['obrasocial'];
-        $medico = $_POST['medico'];
-        $sql_update = mysqli_query($conexion, "UPDATE cliente SET nombre = '$nombre' , telefono = '$telefono', direccion = '$direccion', dni = '$dni', obrasocial = '$obrasocial', medico = '$medico' WHERE idcliente = $idcliente");
-
-        if ($sql_update) {
-            $alert = '<div class="alert alert-success" role="alert">Cliente Actualizado correctamente</div>';
-        } else {
-            $alert = '<div class="alert alert-danger" role="alert">Error al Actualizar el Cliente</div>';
-        }
-    }
-}
-// Mostrar Datos
 
 if (empty($_REQUEST['id'])) {
     header("Location: clientes.php");
+    exit();
 }
-$idcliente = $_REQUEST['id'];
+
+$idcliente = (int) $_REQUEST['id'];
 $sql = mysqli_query($conexion, "SELECT * FROM cliente WHERE idcliente = $idcliente");
-$result_sql = mysqli_num_rows($sql);
-if ($result_sql == 0) {
+if (mysqli_num_rows($sql) == 0) {
     header("Location: clientes.php");
-} else {
-    if ($data = mysqli_fetch_array($sql)) {
-        $idcliente = $data['idcliente'];
-        $nombre = $data['nombre'];
-        $telefono = $data['telefono'];
-        $direccion = $data['direccion'];
-        $dni = $data['dni'];
-        $obrasocial = $data['obrasocial'];
-        $medico = $data['medico'];
+    exit();
+}
+$data = mysqli_fetch_assoc($sql);
+$idcliente  = $data['idcliente'];
+$nombre     = $data['nombre'];
+$telefono   = $data['telefono'];
+$direccion  = $data['direccion'];
+$dni        = $data['dni'];
+$obrasocial = $data['obrasocial'];
+$medico     = $data['medico'];
+
+$alert = '';
+if (!empty($_POST)) {
+    if (empty($_POST['nombre']) || empty($_POST['telefono']) || empty($_POST['direccion'])) {
+        $alert = '<div class="alert alert-danger" role="alert">Complete los campos requeridos</div>';
+    } else {
+        $idcliente   = (int) $_POST['id'];
+        $nombre      = mysqli_real_escape_string($conexion, $_POST['nombre']);
+        $telefono    = mysqli_real_escape_string($conexion, $_POST['telefono']);
+        $direccion   = mysqli_real_escape_string($conexion, $_POST['direccion']);
+        $dni         = mysqli_real_escape_string($conexion, $_POST['dni']);
+        $obrasocial  = mysqli_real_escape_string($conexion, $_POST['obrasocial']);
+        $medico      = mysqli_real_escape_string($conexion, $_POST['medico']);
+        $sql_update  = mysqli_query($conexion, "UPDATE cliente SET nombre='$nombre', telefono='$telefono', direccion='$direccion', dni='$dni', obrasocial='$obrasocial', medico='$medico' WHERE idcliente=$idcliente");
+        if ($sql_update) {
+            $alert = '<div class="alert alert-success" role="alert">Cliente actualizado correctamente</div>';
+        } else {
+            $alert = '<div class="alert alert-danger" role="alert">Error al actualizar el cliente</div>';
+        }
     }
 }
+
+include_once "includes/header.php";
 ?>
 <!-- Begin Page Content -->
 <div class="container-fluid">
@@ -77,15 +87,15 @@ if ($result_sql == 0) {
                         </div>
                         <div class="form-group">
                             <label for="dni">DNI</label>
-                            <input type="text" placeholder="Ingrese Documento" name="dni" id="dni" class="form-control">
+                            <input type="text" placeholder="Ingrese Documento" name="dni" id="dni" class="form-control" value="<?php echo htmlspecialchars($dni); ?>">
                         </div>
                         <div class="form-group">
                             <label for="obrasocial">Obra Social</label>
-                            <input type="text" placeholder="Ingrese Obra Social" name="obrasocial" id="obrasocial" class="form-control">
+                            <input type="text" placeholder="Ingrese Obra Social" name="obrasocial" id="obrasocial" class="form-control" value="<?php echo htmlspecialchars($obrasocial); ?>">
                         </div>
                         <div class="form-group">
                             <label for="medico">Médico</label>
-                            <input type="text" placeholder="Ingrese Medico" name="medico" id="medico" class="form-control">
+                            <input type="text" placeholder="Ingrese Medico" name="medico" id="medico" class="form-control" value="<?php echo htmlspecialchars($medico); ?>">
                         </div>
                         <button type="submit" class="btn btn-primary"><i class="fas fa-user-edit"></i> Editar Cliente</button>
                         <a href="clientes.php" class="btn btn-danger">Atras</a>
