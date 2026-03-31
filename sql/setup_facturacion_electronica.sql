@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS tipos_comprobante (
 -- Insertar tipos de comprobante
 INSERT INTO tipos_comprobante (id, codigo, descripcion, discrimina_iva) VALUES
 (1, 'FA', 'Factura A', 1),
-(6, 'FB', 'Factura B', 1),
+(6, 'FB', 'Factura B', 0),
 (11, 'FC', 'Factura C', 0),
 (3, 'NCA', 'Nota de Crédito A', 1),
 (8, 'NCB', 'Nota de Crédito B', 1),
@@ -64,7 +64,9 @@ INSERT INTO tipos_comprobante (id, codigo, descripcion, discrimina_iva) VALUES
 (2, 'NDA', 'Nota de Débito A', 1),
 (7, 'NDB', 'Nota de Débito B', 1),
 (12, 'NDC', 'Nota de Débito C', 0)
-ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion);
+ON DUPLICATE KEY UPDATE
+descripcion = VALUES(descripcion),
+discrimina_iva = VALUES(discrimina_iva);
 
 -- Agregar campos a la tabla cliente para facturación
 -- Nota: Si las columnas ya existen, el script PHP ignora el error automáticamente
