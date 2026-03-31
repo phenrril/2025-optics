@@ -66,19 +66,11 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
     /**
      * Generar factura electrónica real contra AFIP
      */
-    public function generarFactura($id_venta) {
-        // Obtener datos de la venta
-        $query_venta = mysqli_query($this->conexion,
-            "SELECT v.*, c.nombre, c.dni, c.cuit, c.telefono, c.direccion, c.condicion_iva, c.tipo_documento
-             FROM ventas v
-             LEFT JOIN cliente c ON v.id_cliente = c.idcliente
-             WHERE v.id = " . intval($id_venta));
-
-        if (!$query_venta || mysqli_num_rows($query_venta) == 0) {
-            throw new \Exception("Venta no encontrada");
-        }
-
-        $venta = mysqli_fetch_assoc($query_venta);
+    public function generarFactura($id_venta, array $overrideData = []) {
+        $datos_facturacion = $this->obtenerDatosPreviosFacturacion($id_venta, $overrideData);
+        $venta = $datos_facturacion['venta'];
+        $tipo_comprobante = $datos_facturacion['tipo_comprobante'];
+        $cliente_factura = $datos_facturacion['cliente_factura'];
 
         // Obtener detalle
         $query_detalle = mysqli_query($this->conexion,
@@ -96,8 +88,6 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
             throw new \Exception("No se encontraron ítems en la venta");
         }
 
-        // Determinar tipo de comprobante
-        $tipo_comprobante = $this->determinarTipoComprobante($venta['condicion_iva'] ?? 'Consumidor Final');
         $punto_venta      = (int) $this->config['punto_venta'];
         $total            = round((float) $venta['total'], 2);
 
@@ -111,18 +101,8 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
         }
 
         // Tipo y número de documento del cliente
-        $tipo_doc = self::DOC_DNI;
-        $nro_doc  = preg_replace('/[^0-9]/', '', $venta['dni'] ?? '0');
-
-        if (!empty($venta['cuit']) && $tipo_comprobante == self::FACTURA_A) {
-            $tipo_doc = self::DOC_CUIT;
-            $nro_doc  = preg_replace('/[^0-9]/', '', $venta['cuit']);
-        }
-
-        if (empty($nro_doc) || $nro_doc == '0') {
-            $tipo_doc = self::DOC_CONSUMIDOR_FINAL;
-            $nro_doc  = 0;
-        }
+        $tipo_doc = $cliente_factura['tipo_documento'];
+        $nro_doc  = $cliente_factura['numero_documento'];
 
         // Inicializar conexión AFIP
         $this->inicializarSDK();
@@ -154,6 +134,7 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
                 'ImpTrib'    => 0,
                 'MonId'      => 'PES',
                 'MonCotiz'   => 1,
+                'cliente_factura' => $cliente_factura,
             ];
 
             if ($tipo_comprobante == self::FACTURA_A || $tipo_comprobante == self::FACTURA_B) {

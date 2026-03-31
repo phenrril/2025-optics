@@ -44,11 +44,21 @@ if (!isset($_POST['id_venta']) || empty($_POST['id_venta'])) {
 }
 
 $id_venta = intval($_POST['id_venta']);
+$override_data = [
+    'nombre_cliente' => $_POST['nombre_cliente'] ?? '',
+    'dni' => $_POST['dni'] ?? '',
+    'cuit' => $_POST['cuit'] ?? '',
+    'tipo_factura' => $_POST['tipo_factura'] ?? '',
+    'tipo_documento' => $_POST['tipo_documento'] ?? '',
+];
 
 try {
     // Leer configuración para decidir si usar simulación o SDK real
     $config_res = mysqli_query($conexion, "SELECT produccion FROM facturacion_config LIMIT 1");
-    $config_row = ($config_res && mysqli_num_rows($config_res) > 0) ? mysqli_fetch_assoc($config_res) : ['produccion' => 0];
+    $config_row = ['produccion' => 0];
+    if ($config_res instanceof \mysqli_result && mysqli_num_rows($config_res) > 0) {
+        $config_row = mysqli_fetch_assoc($config_res);
+    }
     $modo_produccion = !empty($config_row['produccion']);
 
     // Crear instancia de facturación electrónica
@@ -61,7 +71,7 @@ try {
     }
     
     // Generar factura
-    $resultado = $facturacion->generarFactura($id_venta);
+    $resultado = $facturacion->generarFactura($id_venta, $override_data);
     
     // Formatear respuesta
     $tipo_comprobante_texto = '';

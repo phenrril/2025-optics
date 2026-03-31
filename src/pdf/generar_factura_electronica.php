@@ -35,6 +35,11 @@ if (!$query_factura || mysqli_num_rows($query_factura) == 0) {
 }
 
 $factura = mysqli_fetch_assoc($query_factura);
+$xml_request = json_decode($factura['xml_request'] ?? '', true);
+$cliente_factura_snapshot = [];
+if (is_array($xml_request) && isset($xml_request['cliente_factura']) && is_array($xml_request['cliente_factura'])) {
+    $cliente_factura_snapshot = $xml_request['cliente_factura'];
+}
 
 // Verificar que esté aprobada
 if ($factura['estado'] !== 'aprobado') {
@@ -43,12 +48,26 @@ if ($factura['estado'] !== 'aprobado') {
 
 // Obtener datos de la venta
 $query_venta = mysqli_query($conexion, "SELECT * FROM ventas WHERE id = $id_venta");
-$venta = mysqli_fetch_assoc($query_venta);
+$venta = ($query_venta instanceof \mysqli_result) ? mysqli_fetch_assoc($query_venta) : null;
+if (!$venta) {
+    die('No se encontró la venta asociada a esta factura');
+}
 
 // Obtener datos del cliente
 $id_cliente = $venta['id_cliente'];
 $query_cliente = mysqli_query($conexion, "SELECT * FROM cliente WHERE idcliente = $id_cliente");
-$cliente = mysqli_fetch_assoc($query_cliente);
+$cliente = ($query_cliente instanceof \mysqli_result) ? mysqli_fetch_assoc($query_cliente) : [];
+
+$cliente_factura = [
+    'nombre' => $cliente_factura_snapshot['nombre'] ?? ($cliente['nombre'] ?? 'CONSUMIDOR FINAL'),
+    'dni' => $cliente_factura_snapshot['dni'] ?? ($cliente['dni'] ?? ''),
+    'cuit' => $cliente_factura_snapshot['cuit'] ?? ($cliente['cuit'] ?? ''),
+    'condicion_iva' => $cliente_factura_snapshot['condicion_iva'] ?? ($cliente['condicion_iva'] ?? 'Consumidor Final'),
+    'tipo_documento' => $cliente_factura_snapshot['tipo_documento'] ?? null,
+    'tipo_documento_desc' => $cliente_factura_snapshot['tipo_documento_desc'] ?? '',
+    'numero_documento' => $cliente_factura_snapshot['numero_documento'] ?? null,
+    'numero_documento_display' => $cliente_factura_snapshot['numero_documento_display'] ?? '',
+];
 
 // Obtener detalle de productos
 $query_detalle = mysqli_query($conexion, 
@@ -59,11 +78,11 @@ $query_detalle = mysqli_query($conexion,
 
 // Obtener configuración del negocio
 $query_config_neg = mysqli_query($conexion, "SELECT * FROM configuracion LIMIT 1");
-$config_negocio = mysqli_fetch_assoc($query_config_neg);
+$config_negocio = ($query_config_neg instanceof \mysqli_result) ? mysqli_fetch_assoc($query_config_neg) : [];
 
 // Obtener configuración de facturación
 $query_config_fact = mysqli_query($conexion, "SELECT * FROM facturacion_config LIMIT 1");
-$config_facturacion = mysqli_fetch_assoc($query_config_fact);
+$config_facturacion = ($query_config_fact instanceof \mysqli_result) ? mysqli_fetch_assoc($query_config_fact) : [];
 
 // Crear PDF
 $pdf = new FPDF('P', 'mm', 'A4');
@@ -157,16 +176,22 @@ $pdf->Cell(190, 6, utf8_decode('DATOS DEL CLIENTE'), 0, 1, 'L', true);
 $pdf->SetFont('Arial', '', 9);
 $pdf->Cell(50, 5, utf8_decode('Apellido y Nombre / Razón Social:'), 0, 0, 'L');
 $pdf->SetFont('Arial', 'B', 9);
-$pdf->Cell(140, 5, utf8_decode($cliente['nombre'] ?? 'CONSUMIDOR FINAL'), 0, 1, 'L');
+$pdf->Cell(140, 5, utf8_decode($cliente_factura['nombre'] ?? 'CONSUMIDOR FINAL'), 0, 1, 'L');
 
 // CUIT/DNI
 $pdf->SetFont('Arial', '', 9);
 $doc_label = 'DNI';
-$doc_numero = $cliente['dni'] ?? '';
+$doc_numero = $cliente_factura['dni'] ?? '';
 
-if (!empty($cliente['cuit'])) {
+if (!empty($cliente_factura['tipo_documento_desc'])) {
+    $doc_label = $cliente_factura['tipo_documento_desc'];
+}
+
+if (!empty($cliente_factura['numero_documento_display'])) {
+    $doc_numero = $cliente_factura['numero_documento_display'];
+} elseif (!empty($cliente_factura['cuit'])) {
     $doc_label = 'CUIT';
-    $doc_numero = $cliente['cuit'];
+    $doc_numero = $cliente_factura['cuit'];
 }
 
 if (empty($doc_numero)) {
@@ -180,7 +205,7 @@ $pdf->Cell(60, 5, $doc_numero, 0, 0, 'L');
 $pdf->SetFont('Arial', '', 9);
 $pdf->Cell(30, 5, utf8_decode('Condición IVA:'), 0, 0, 'L');
 $pdf->SetFont('Arial', 'B', 9);
-$pdf->Cell(50, 5, utf8_decode($cliente['condicion_iva'] ?? 'Consumidor Final'), 0, 1, 'L');
+$pdf->Cell(50, 5, utf8_decode($cliente_factura['condicion_iva'] ?? 'Consumidor Final'), 0, 1, 'L');
 
 $pdf->SetFont('Arial', '', 9);
 $pdf->Cell(50, 5, utf8_decode('Dirección:'), 0, 0, 'L');
@@ -205,7 +230,7 @@ $pdf->SetFont('Arial', 'B', 9);
 $pdf->SetFillColor(220, 220, 220);
 
 // Encabezados de tabla
-if ($letra_comprobante == 'A' || $letra_comprobante == 'B') {
+if ($letra_comprobante == 'A') {
     // Factura con IVA discriminado
     $pdf->Cell(15, 6, 'Cant.', 1, 0, 'C', true);
     $pdf->Cell(75, 6, utf8_decode('Descripción'), 1, 0, 'C', true);
@@ -231,7 +256,7 @@ while ($item = mysqli_fetch_assoc($query_detalle)) {
     $precio = floatval($item['precio']);
     $subtotal_item = $cantidad * $precio;
     
-    if ($letra_comprobante == 'A' || $letra_comprobante == 'B') {
+    if ($letra_comprobante == 'A') {
         // Calcular neto e IVA
         $neto_item = $subtotal_item / 1.21;
         $iva_item = $subtotal_item - $neto_item;
@@ -264,7 +289,7 @@ $pdf->SetY($y_actual);
 
 $pdf->SetFont('Arial', 'B', 10);
 
-if ($letra_comprobante == 'A' || $letra_comprobante == 'B') {
+if ($letra_comprobante == 'A') {
     // Discriminar IVA
     $neto_gravado = floatval($factura['neto_gravado']);
     $iva_total = floatval($factura['iva_total']);
@@ -284,7 +309,7 @@ if ($letra_comprobante == 'A' || $letra_comprobante == 'B') {
     $pdf->SetFillColor(220, 220, 220);
     $pdf->Cell(25, 8, '$' . number_format($total, 2), 1, 1, 'R', true);
 } else {
-    // Factura C - No discriminar IVA
+    // Factura B/C - No discriminar IVA visualmente
     $total = floatval($factura['total']);
     
     $pdf->SetFont('Arial', '', 9);
@@ -332,8 +357,8 @@ $qr_data = [
     'importe' => (float) $factura['total'],
     'moneda' => 'PES',
     'ctz' => 1,
-    'tipoDocRec' => 99, // Ajustar según cliente
-    'nroDocRec' => 0,
+    'tipoDocRec' => (int) ($cliente_factura['tipo_documento'] ?? 99),
+    'nroDocRec' => (int) ($cliente_factura['numero_documento'] ?? 0),
     'tipoCodAut' => 'E',
     'codAut' => (int) $factura['cae']
 ];
