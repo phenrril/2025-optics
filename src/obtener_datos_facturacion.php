@@ -29,6 +29,7 @@ $override_data = [
     'cuit' => $_POST['cuit'] ?? '',
     'tipo_factura' => $_POST['tipo_factura'] ?? '',
     'tipo_documento' => $_POST['tipo_documento'] ?? '',
+    'fecha_emision' => $_POST['fecha_emision'] ?? '',
 ];
 
 try {
@@ -40,6 +41,10 @@ try {
         'data' => [
             'id_venta' => $id_venta,
             'total' => (float) ($preview['venta']['total'] ?? 0),
+            'fecha_emision' => [
+                'db' => $preview['fecha_emision'],
+                'display' => $preview['fecha_emision_display'],
+            ],
             'cliente' => $preview['cliente_factura'],
             'tipo_comprobante' => [
                 'id' => $preview['tipo_comprobante'],

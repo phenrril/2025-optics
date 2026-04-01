@@ -79,11 +79,13 @@ function renderResumenFacturacion(data) {
     const cliente = data.cliente;
     const tipo = data.tipo_comprobante;
     const documento = cliente.numero_documento_display || 'S/D';
+    const fechaEmision = data.fecha_emision?.display || '';
 
     return `
         <div class="text-left">
             <p class="mb-2"><strong>Venta:</strong> #${escapeHtml(data.id_venta)}</p>
             <p class="mb-2"><strong>Total:</strong> ${escapeHtml(formatearMoneda(data.total))}</p>
+            <p class="mb-2"><strong>Fecha de emisión:</strong> ${escapeHtml(fechaEmision)}</p>
             <hr>
             <p class="mb-2"><strong>Nombre / Razón social:</strong> ${escapeHtml(cliente.nombre || 'CONSUMIDOR FINAL')}</p>
             <p class="mb-2"><strong>CUIT:</strong> ${escapeHtml(cliente.cuit || 'S/D')}</p>
@@ -118,6 +120,7 @@ function renderOpcionesTipoDocumento(tipoActual) {
 
 async function solicitarModificacionFacturacion(previewData) {
     const cliente = previewData.cliente;
+    const fechaEmision = previewData.fecha_emision?.db || '';
 
     const result = await Swal.fire({
         title: 'Modificar datos antes de facturar',
@@ -141,6 +144,10 @@ async function solicitarModificacionFacturacion(previewData) {
                         ${renderOpcionesTipoFactura(previewData.tipos_disponibles || [], previewData.tipo_comprobante.id)}
                     </select>
                 </div>
+                <div class="form-group mb-2">
+                    <label for="swal-fecha-emision">Fecha de emisión</label>
+                    <input id="swal-fecha-emision" type="date" class="swal2-input" value="${escapeHtml(fechaEmision)}" style="margin: 0; width: 100%;">
+                </div>
                 <div class="form-group mb-0">
                     <label for="swal-tipo-documento">Documento a informar</label>
                     <select id="swal-tipo-documento" class="swal2-select" style="margin: 0; width: 100%;">
@@ -162,6 +169,7 @@ async function solicitarModificacionFacturacion(previewData) {
             const cuit = document.getElementById('swal-cuit').value.trim();
             const dni = document.getElementById('swal-dni').value.trim();
             const tipoFactura = document.getElementById('swal-tipo-factura').value.trim();
+            const fechaEmisionNueva = document.getElementById('swal-fecha-emision').value.trim();
             const tipoDocumento = document.getElementById('swal-tipo-documento').value.trim();
 
             if (nombre !== '') {
@@ -175,6 +183,9 @@ async function solicitarModificacionFacturacion(previewData) {
             }
             if (tipoFactura !== '') {
                 overrides.tipo_factura = tipoFactura;
+            }
+            if (fechaEmisionNueva !== '' && fechaEmisionNueva !== fechaEmision) {
+                overrides.fecha_emision = fechaEmisionNueva;
             }
             if (tipoDocumento !== '') {
                 overrides.tipo_documento = tipoDocumento;
