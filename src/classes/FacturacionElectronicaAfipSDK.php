@@ -71,6 +71,8 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
         $venta = $datos_facturacion['venta'];
         $tipo_comprobante = $datos_facturacion['tipo_comprobante'];
         $cliente_factura = $datos_facturacion['cliente_factura'];
+        $fecha_emision_db = $datos_facturacion['fecha_emision'];
+        $fecha_emision_afip = $datos_facturacion['fecha_emision_afip'];
 
         // Obtener detalle
         $query_detalle = mysqli_query($this->conexion,
@@ -114,7 +116,7 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
             $ultimo_numero  = $this->wsfe->getLastVoucher($punto_venta, $tipo_comprobante);
             $proximo_numero = $ultimo_numero + 1;
 
-            $fecha_emision = date('Ymd');
+            $fecha_emision = $fecha_emision_afip;
 
             $data = [
                 'CantReg'    => 1,
@@ -135,6 +137,7 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
                 'MonId'      => 'PES',
                 'MonCotiz'   => 1,
                 'cliente_factura' => $cliente_factura,
+                'fecha_emision' => $fecha_emision_db,
             ];
 
             if ($tipo_comprobante == self::FACTURA_A || $tipo_comprobante == self::FACTURA_B) {
@@ -161,7 +164,7 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
                 'tipo_comprobante'   => $tipo_comprobante,
                 'punto_venta'        => $punto_venta,
                 'numero_comprobante' => $proximo_numero,
-                'fecha_emision'      => date('Y-m-d'),
+                'fecha_emision'      => $fecha_emision_db,
                 'cae'                => $resultado['CAE'],
                 'vencimiento_cae'    => $resultado['CAEFchVto'],
                 'total'              => $total,
@@ -195,7 +198,7 @@ class FacturacionElectronicaAfipSDK extends FacturacionElectronica {
                         'tipo_comprobante'   => $tipo_comprobante,
                         'punto_venta'        => $punto_venta,
                         'numero_comprobante' => $proximo_numero,
-                        'fecha_emision'      => date('Y-m-d'),
+                        'fecha_emision'      => $fecha_emision_db,
                         'total'              => $total,
                         'iva_total'          => $iva_total,
                         'neto_gravado'       => $neto_gravado,

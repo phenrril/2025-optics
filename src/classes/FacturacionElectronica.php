@@ -160,8 +160,13 @@ class FacturacionElectronica {
             $nombre_cliente = 'CONSUMIDOR FINAL';
         }
 
+        $fecha_emision = $this->resolverFechaEmision($overrideData['fecha_emision']);
+
         return [
             'venta' => $venta,
+            'fecha_emision' => $fecha_emision['db'],
+            'fecha_emision_afip' => $fecha_emision['afip'],
+            'fecha_emision_display' => $fecha_emision['display'],
             'tipo_comprobante' => $tipo_comprobante,
             'tipo_comprobante_desc' => $this->obtenerDescripcionTipoComprobante($tipo_comprobante),
             'tipo_comprobante_predeterminado' => $tipo_predeterminado,
@@ -208,6 +213,7 @@ class FacturacionElectronica {
             'cuit' => preg_replace('/\D+/', '', (string) ($overrideData['cuit'] ?? '')),
             'tipo_factura' => strtoupper(trim((string) ($overrideData['tipo_factura'] ?? ''))),
             'tipo_documento' => strtoupper(trim((string) ($overrideData['tipo_documento'] ?? ''))),
+            'fecha_emision' => trim((string) ($overrideData['fecha_emision'] ?? '')),
         ];
 
         if (!in_array($data['tipo_factura'], ['A', 'B', 'C'], true)) {
@@ -219,6 +225,33 @@ class FacturacionElectronica {
         }
 
         return $data;
+    }
+
+    /**
+     * Resolver la fecha de emisión efectiva.
+     */
+    protected function resolverFechaEmision($fecha_emision_manual = '') {
+        $fecha_emision_manual = trim((string) $fecha_emision_manual);
+
+        if ($fecha_emision_manual !== '') {
+            $fecha = \DateTime::createFromFormat('Y-m-d', $fecha_emision_manual);
+            $errores = \DateTime::getLastErrors();
+            if ($errores === false) {
+                $errores = ['warning_count' => 0, 'error_count' => 0];
+            }
+
+            if (!$fecha || $errores['warning_count'] > 0 || $errores['error_count'] > 0) {
+                throw new \Exception('La fecha de emisión ingresada no es válida');
+            }
+        } else {
+            $fecha = new \DateTime('today');
+        }
+
+        return [
+            'db' => $fecha->format('Y-m-d'),
+            'afip' => $fecha->format('Ymd'),
+            'display' => $fecha->format('d/m/Y'),
+        ];
     }
 
     /**
@@ -404,6 +437,8 @@ class FacturacionElectronica {
         $venta = $datos_facturacion['venta'];
         $tipo_comprobante = $datos_facturacion['tipo_comprobante'];
         $cliente_factura = $datos_facturacion['cliente_factura'];
+        $fecha_emision_db = $datos_facturacion['fecha_emision'];
+        $fecha_emision_afip = $datos_facturacion['fecha_emision_afip'];
         
         // 2. Obtener detalle de la venta
         $query_detalle = mysqli_query($this->conexion,
@@ -426,7 +461,7 @@ class FacturacionElectronica {
         $proximo_numero = $this->obtenerProximoNumero($tipo_comprobante, $punto_venta);
         
         // 4. Preparar datos del comprobante
-        $fecha_emision = date('Ymd'); // Formato: YYYYMMDD
+        $fecha_emision = $fecha_emision_afip; // Formato: YYYYMMDD
         
         // Calcular totales según tipo de factura
         $total = floatval($venta['total']);
@@ -468,6 +503,7 @@ class FacturacionElectronica {
             'MonId' => 'PES', // Moneda: Pesos
             'MonCotiz' => 1, // Cotización
             'cliente_factura' => $cliente_factura,
+            'fecha_emision' => $fecha_emision_db,
         ];
         
         // 7. Agregar alícuotas de IVA (solo para Factura A y B)
@@ -498,7 +534,7 @@ class FacturacionElectronica {
                 'tipo_comprobante' => $tipo_comprobante,
                 'punto_venta' => $punto_venta,
                 'numero_comprobante' => $proximo_numero,
-                'fecha_emision' => date('Y-m-d'),
+                'fecha_emision' => $fecha_emision_db,
                 'cae' => $resultado['CAE'],
                 'vencimiento_cae' => $resultado['CAEFchVto'],
                 'total' => $total,
@@ -526,7 +562,7 @@ class FacturacionElectronica {
                 'tipo_comprobante' => $tipo_comprobante,
                 'punto_venta' => $punto_venta,
                 'numero_comprobante' => $proximo_numero,
-                'fecha_emision' => date('Y-m-d'),
+                'fecha_emision' => $fecha_emision_db,
                 'total' => $total,
                 'iva_total' => $iva_total,
                 'neto_gravado' => $neto_gravado,

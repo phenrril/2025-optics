@@ -50,6 +50,7 @@ $override_data = [
     'cuit' => $_POST['cuit'] ?? '',
     'tipo_factura' => $_POST['tipo_factura'] ?? '',
     'tipo_documento' => $_POST['tipo_documento'] ?? '',
+    'fecha_emision' => $_POST['fecha_emision'] ?? '',
 ];
 
 try {
