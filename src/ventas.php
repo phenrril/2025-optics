@@ -314,6 +314,120 @@ include_once "includes/header.php";
     transition: all 0.3s;
 }
 
+/* Panel graduaciones (columna derecha, #okgrad) */
+.grad-temp-panel {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    background: #fff;
+    border: 1px solid rgba(102, 126, 234, 0.15);
+}
+.grad-temp-panel-head {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 12px 18px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+}
+.grad-temp-panel-head .badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 20px;
+    padding: 0.25em 0.55em;
+}
+.grad-temp-table-wrap {
+    border-radius: 0 0 12px 12px;
+}
+.table-graduaciones-temp thead th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 8px !important;
+    white-space: nowrap;
+}
+.table-graduaciones-temp tbody td {
+    padding: 10px 8px !important;
+    vertical-align: middle !important;
+}
+.table-graduaciones-temp tbody tr:hover {
+    transform: none;
+}
+.grad-th-narrow { width: 4.5rem; }
+.grad-th-actions { width: 5.5rem; }
+.grad-th-obs { min-width: 6rem; max-width: 10rem; }
+.grad-td-rx { vertical-align: middle !important; }
+.grad-rx-cell {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    gap: 0.35rem;
+    padding: 6px 10px;
+    background: linear-gradient(180deg, #f8f9ff 0%, #f0f2fb 100%);
+    border: 1px solid #e2e6f0;
+    border-radius: 8px;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+    max-width: 100%;
+    font-variant-numeric: tabular-nums;
+}
+.grad-rx-bit {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.2rem;
+}
+.grad-rx-lab {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6c757d;
+    text-decoration: none;
+    border-bottom: 0;
+    cursor: help;
+}
+.grad-rx-val {
+    font-weight: 600;
+    color: #2d3748;
+}
+.grad-rx-sep {
+    color: #cbd5e0;
+    font-weight: 300;
+    user-select: none;
+}
+.grad-add-pill {
+    display: inline-block;
+    min-width: 2.25rem;
+    padding: 0.35rem 0.65rem;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    color: #1b5e20;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border-radius: 20px;
+    font-variant-numeric: tabular-nums;
+}
+.grad-muted {
+    color: #adb5bd;
+    font-weight: 600;
+}
+.grad-obs-text {
+    display: block;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    color: #495057;
+}
+.grad-temp-empty {
+    padding: 14px 16px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px dashed #dee2e6;
+}
+
 .tfoot-modern {
     background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
     color: white;
@@ -529,6 +643,7 @@ include_once "includes/header.php";
                 </div>
                 <div class="card-body card-body-modern">
                             <form id="graduaciones">
+                        <input type="hidden" id="id_graduacion_edit" name="id_graduacion_edit" value="">
                         <label class="graduation-label">
                             <i class="fas fa-glasses mr-2"></i> Graduación Lejos &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Graduación Cerca
                         </label>
@@ -566,8 +681,8 @@ include_once "includes/header.php";
                             <button class="btn btn-modern btn-modern-primary" id="grad" type="button">
                                 <i class="fas fa-plus mr-2"></i> Agregar Graduaciones
                             </button>
-                            <button class="btn btn-modern btn-modern-danger" id="borrar_grad" type="button">
-                                <i class="fas fa-trash mr-2"></i> Borrar
+                            <button class="btn btn-modern btn-modern-secondary" id="borrar_grad" type="button" title="Solo vacía los campos del formulario; no borra filas de la tabla">
+                                <i class="fas fa-eraser mr-2"></i> Limpiar formulario
                             </button>
                         </div>
                     </form>
