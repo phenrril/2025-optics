@@ -307,18 +307,74 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('obra_social')?.addEventListener('input', calcularVenta);
 
     document.querySelector("#borrar_grad").addEventListener("click", function () {
-        {
+        var ids = ['ojoD1', 'ojoD2', 'ojoD3', 'ojoI1', 'ojoI2', 'ojoI3', 'ojoDl1', 'ojoDl2', 'ojoDl3', 'ojoIl1', 'ojoIl2', 'ojoIl3', 'add', 'obs'];
+        ids.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        var hid = document.getElementById('id_graduacion_edit');
+        if (hid) hid.value = '';
+        var gbtn = document.getElementById('grad');
+        if (gbtn) gbtn.innerHTML = '<i class="fas fa-plus mr-2"></i> Agregar Graduaciones';
+    });
+
+    function gradCellToInput(v) {
+        if (v === null || v === undefined) return '';
+        if (v === 0 || v === '0') return '';
+        return String(v);
+    }
+
+    $(document).on('click', '.btn-editar-graduacion', function () {
+        var raw = $(this).attr('data-grad');
+        if (!raw) return;
+        try {
+            var g = JSON.parse(raw);
+        } catch (e) {
+            return;
+        }
+        $('#id_graduacion_edit').val(g.id || '');
+        $('#ojoDl1').val(gradCellToInput(g.od_l_1));
+        $('#ojoDl2').val(gradCellToInput(g.od_l_2));
+        $('#ojoDl3').val(gradCellToInput(g.od_l_3));
+        $('#ojoIl1').val(gradCellToInput(g.oi_l_1));
+        $('#ojoIl2').val(gradCellToInput(g.oi_l_2));
+        $('#ojoIl3').val(gradCellToInput(g.oi_l_3));
+        $('#ojoD1').val(gradCellToInput(g.od_c_1));
+        $('#ojoD2').val(gradCellToInput(g.od_c_2));
+        $('#ojoD3').val(gradCellToInput(g.od_c_3));
+        $('#ojoI1').val(gradCellToInput(g.oi_c_1));
+        $('#ojoI2').val(gradCellToInput(g.oi_c_2));
+        $('#ojoI3').val(gradCellToInput(g.oi_c_3));
+        $('#add').val(gradCellToInput(g.addg));
+        $('#obs').val(g.obs != null ? String(g.obs) : '');
+        var gbtn = document.getElementById('grad');
+        if (gbtn) gbtn.innerHTML = '<i class="fas fa-save mr-2"></i> Guardar cambios';
+        Swal.fire({ position: 'top-end', icon: 'info', title: 'Editando graduación', showConfirmButton: false, timer: 1500 });
+    });
+
+    $(document).on('click', '.btn-eliminar-graduacion', function () {
+        var id = $(this).data('id');
+        if (!id) return;
+        Swal.fire({
+            title: '¿Eliminar esta graduación?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
             $.ajax({
-                url: "borrar_grad.php",
-                type: "POST",
-                data: $("#borrar_grad").serialize(),
+                url: 'borrar_grad.php',
+                type: 'POST',
+                data: { id: id },
                 success: function (resultado) {
-                    $("#okgrad").html(resultado);
-    
+                    $('#okgrad').html(resultado);
                 }
             });
-        }
-    })
+        });
+    });
     
     
     
