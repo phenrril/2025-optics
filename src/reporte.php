@@ -160,6 +160,54 @@ include_once "includes/header.php";
     border-bottom: none;
 }
 
+.movement-card {
+    height: 100%;
+}
+
+.movement-card .card-body-modern {
+    padding: 0;
+}
+
+.movement-table {
+    table-layout: fixed;
+    margin-bottom: 0;
+}
+
+.movement-table th:nth-child(1),
+.movement-table td:nth-child(1) {
+    width: 22%;
+    white-space: nowrap;
+}
+
+.movement-table th:nth-child(2),
+.movement-table td:nth-child(2) {
+    width: 53%;
+}
+
+.movement-table th:nth-child(3),
+.movement-table td:nth-child(3) {
+    width: 25%;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.movement-table tbody td:nth-child(2) {
+    color: #495057;
+    font-weight: 500;
+    word-break: break-word;
+}
+
+.movement-table .totals-row td:first-child {
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+@media (max-width: 991px) {
+    .movement-card {
+        margin-bottom: 20px;
+    }
+}
+
 .fade-in-container {
     animation: fadeIn 0.6s ease-in;
 }
@@ -327,8 +375,8 @@ include_once "includes/header.php";
         $total_neto = $costs_data['total_neto'] ?? 0;
         $ganancia_bruta = $total_neto - $total_costos;
         
-        // Ingresos adicionales
-        $query_ingresos = mysqli_query($conexion, "SELECT SUM(ingresos) as total FROM ingresos WHERE fecha BETWEEN '$from_date' AND '$to_date'");
+        // Ingresos adicionales: solo movimientos manuales/no asociados a venta
+        $query_ingresos = mysqli_query($conexion, "SELECT SUM(ingresos) as total FROM ingresos WHERE fecha BETWEEN '$from_date' AND '$to_date' AND (id_venta = '0' OR id_venta LIKE 'MANUAL|%')");
         $ingresos_data = mysqli_fetch_assoc($query_ingresos);
         $total_ingresos = $ingresos_data['total'] ?? 0;
         
@@ -337,8 +385,8 @@ include_once "includes/header.php";
         $egresos_data = mysqli_fetch_assoc($query_egresos);
         $total_egresos = $egresos_data['total'] ?? 0;
         
-        // Ganancia total
-        $ganancia_total = $ganancia_bruta + $total_ingresos - $total_egresos;
+        // Ganancia total (egresos se guardan negativos en BD: sumar el total corrige el signo)
+        $ganancia_total = $ganancia_bruta + $total_ingresos + floatval($total_egresos);
         
         // Ticket promedio
         $ticket_promedio = $total_transacciones > 0 ? $total_ventas / $total_transacciones : 0;
@@ -385,7 +433,7 @@ include_once "includes/header.php";
                         <i class="fas fa-arrow-down"></i>
                     </div>
                     <div class="kpi-label">Egresos</div>
-                    <div class="kpi-value text-warning">-$<?php echo number_format($total_egresos, 2); ?></div>
+                    <div class="kpi-value text-warning">-$<?php echo number_format(abs(floatval($total_egresos)), 2); ?></div>
                     <div class="text-muted small">+$<?php echo number_format($total_ingresos, 2); ?> ingresos</div>
                 </div>
             </div>
@@ -513,27 +561,41 @@ include_once "includes/header.php";
         <!-- Ingresos y Egresos -->
         <div class="row">
             <div class="col-md-6">
-                <div class="card card-modern">
+                <div class="card card-modern movement-card">
                     <div class="card-header-modern card-header-info">
                         <i class="fas fa-arrow-up mr-2"></i> Ingresos Adicionales
                     </div>
-                    <div class="card-body-modern p-0">
+                    <div class="card-body-modern">
                         <div class="table-responsive">
-                            <table class="table table-modern mb-0">
+                            <table class="table table-modern movement-table">
                                 <thead>
                                     <tr>
                                         <th>Fecha</th>
+                                        <th>Motivo</th>
                                         <th>Monto</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                 <?php
-                                $query_ing = mysqli_query($conexion, "SELECT fecha, ingresos FROM ingresos WHERE fecha BETWEEN '$from_date' AND '$to_date' ORDER BY fecha DESC");
+                                mysqli_report(MYSQLI_REPORT_OFF);
+                                $query_ing = mysqli_query($conexion, "SELECT fecha, descripcion, id_venta, ingresos FROM ingresos WHERE fecha BETWEEN '$from_date' AND '$to_date' AND (id_venta = '0' OR id_venta LIKE 'MANUAL|%') ORDER BY fecha DESC");
+                                if (!$query_ing) {
+                                    $query_ing = mysqli_query($conexion, "SELECT fecha, id_venta, ingresos FROM ingresos WHERE fecha BETWEEN '$from_date' AND '$to_date' AND (id_venta = '0' OR id_venta LIKE 'MANUAL|%') ORDER BY fecha DESC");
+                                }
                                 if (mysqli_num_rows($query_ing) > 0) {
                                     foreach ($query_ing as $ing) {
+                                        $motivo_ing = '';
+                                        if (isset($ing['descripcion']) && trim((string) $ing['descripcion']) !== '') {
+                                            $motivo_ing = $ing['descripcion'];
+                                        } elseif (isset($ing['id_venta']) && strpos((string) $ing['id_venta'], 'MANUAL|') === 0) {
+                                            $motivo_ing = substr((string) $ing['id_venta'], 7);
+                                        } else {
+                                            $motivo_ing = 'Sin detalle';
+                                        }
                                 ?>
                                     <tr>
                                         <td><?php echo date('d/m/Y', strtotime($ing['fecha'])); ?></td>
+                                        <td><?php echo htmlspecialchars($motivo_ing); ?></td>
                                         <td><strong class="text-success">+$<?php echo number_format($ing['ingresos'], 2); ?></strong></td>
                                     </tr>
                                 <?php 
@@ -541,7 +603,7 @@ include_once "includes/header.php";
                                 } else {
                                     ?>
                                     <tr>
-                                        <td colspan="2" class="text-center py-4">
+                                        <td colspan="3" class="text-center py-4">
                                             <i class="fas fa-info-circle mr-1"></i>
                                             No hay ingresos registrados
                                         </td>
@@ -550,7 +612,7 @@ include_once "includes/header.php";
                                 </tbody>
                                 <tfoot class="totals-row">
                                     <tr>
-                                        <td><strong>TOTAL</strong></td>
+                                        <td colspan="2"><strong>TOTAL</strong></td>
                                         <td><strong>$<?php echo number_format($total_ingresos, 2); ?></strong></td>
                                     </tr>
                                 </tfoot>
@@ -561,35 +623,44 @@ include_once "includes/header.php";
             </div>
 
             <div class="col-md-6">
-                <div class="card card-modern">
+                <div class="card card-modern movement-card">
                     <div class="card-header-modern card-header-warning">
                         <i class="fas fa-arrow-down mr-2"></i> Egresos
                     </div>
-                    <div class="card-body-modern p-0">
+                    <div class="card-body-modern">
                         <div class="table-responsive">
-                            <table class="table table-modern mb-0">
+                            <table class="table table-modern movement-table">
                                 <thead>
                                     <tr>
                                         <th>Fecha</th>
+                                        <th>Motivo</th>
                                         <th>Monto</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                 <?php
-                                $query_egr = mysqli_query($conexion, "SELECT fecha, egresos FROM egresos WHERE fecha BETWEEN '$from_date' AND '$to_date' ORDER BY fecha DESC");
+                                $query_egr = mysqli_query($conexion, "SELECT fecha, descripcion, egresos FROM egresos WHERE fecha BETWEEN '$from_date' AND '$to_date' ORDER BY fecha DESC");
+                                if (!$query_egr) {
+                                    $query_egr = mysqli_query($conexion, "SELECT fecha, egresos FROM egresos WHERE fecha BETWEEN '$from_date' AND '$to_date' ORDER BY fecha DESC");
+                                }
                                 if (mysqli_num_rows($query_egr) > 0) {
                                     foreach ($query_egr as $egr) {
+                                        $motivo_egr = 'Sin detalle';
+                                        if (isset($egr['descripcion']) && trim((string) $egr['descripcion']) !== '') {
+                                            $motivo_egr = $egr['descripcion'];
+                                        }
                     ?>
                                 <tr>
                                         <td><?php echo date('d/m/Y', strtotime($egr['fecha'])); ?></td>
-                                        <td><strong class="text-danger">-$<?php echo number_format($egr['egresos'], 2); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($motivo_egr); ?></td>
+                                        <td><strong class="text-danger">-$<?php echo number_format(abs(floatval($egr['egresos'])), 2); ?></strong></td>
                                 </tr>
                             <?php
                             }
                                 } else {
                                 ?>
                                     <tr>
-                                        <td colspan="2" class="text-center py-4">
+                                        <td colspan="3" class="text-center py-4">
                                             <i class="fas fa-info-circle mr-1"></i>
                                             No hay egresos registrados
                                 </td>
@@ -598,8 +669,8 @@ include_once "includes/header.php";
                     </tbody>
                     <tfoot class="totals-row">
                         <tr>
-                                        <td><strong>TOTAL</strong></td>
-                                        <td><strong>$<?php echo number_format($total_egresos, 2); ?></strong></td>
+                                        <td colspan="2"><strong>TOTAL</strong></td>
+                                        <td><strong>$<?php echo number_format(abs(floatval($total_egresos)), 2); ?></strong></td>
                         </tr>
                     </tfoot>
                 </table>

@@ -14,6 +14,22 @@ if (empty($existe) && $id_user != 1) {
     header("Location: permisos.php");
     exit();
 }
+$metodos_saldos = [];
+$qmet = mysqli_query($conexion, "SELECT id, descripcion FROM metodos ORDER BY id ASC");
+if ($qmet) {
+    while ($m = mysqli_fetch_assoc($qmet)) {
+        $metodos_saldos[] = $m;
+    }
+}
+if (empty($metodos_saldos)) {
+    $metodos_saldos = [
+        ['id' => 1, 'descripcion' => 'Efectivo'],
+        ['id' => 2, 'descripcion' => 'Crédito'],
+        ['id' => 3, 'descripcion' => 'Débito'],
+        ['id' => 4, 'descripcion' => 'Transferencia'],
+        ['id' => 5, 'descripcion' => 'Transferencia laboratorio'],
+    ];
+}
 include_once "includes/header.php"; 
 ?>
 
@@ -79,6 +95,17 @@ include_once "includes/header.php";
     border-color: #667eea;
     box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
     outline: none;
+}
+
+.input-no-spinner::-webkit-outer-spin-button,
+.input-no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.input-no-spinner[type=number] {
+    appearance: textfield;
+    -moz-appearance: textfield;
 }
 
 .btn-modern {
@@ -209,7 +236,7 @@ include_once "includes/header.php";
                     <div class="col-md-6">
                         <div class="form-group">
                             <label><i class="fas fa-dollar-sign mr-2 text-success"></i> Valor *</label>
-                            <input id="valor" name="valor" class="form-control form-control-modern" type="number" step="0.01" min="0" placeholder="Ingresá el valor" required>
+                            <input id="valor" name="valor" class="form-control form-control-modern input-no-spinner" type="number" step="0.01" min="0" placeholder="Ingresá el valor" required>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -221,6 +248,14 @@ include_once "includes/header.php";
                             </select>
                         </div>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-credit-card mr-2 text-secondary"></i> Medio de pago *</label>
+                    <select id="id_metodo" name="id_metodo" class="form-control select-modern" required>
+                        <?php foreach ($metodos_saldos as $mm) { ?>
+                            <option value="<?php echo (int) $mm['id']; ?>"><?php echo htmlspecialchars($mm['descripcion']); ?></option>
+                        <?php } ?>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label><i class="fas fa-file-alt mr-2 text-info"></i> Descripción *</label>
@@ -242,6 +277,10 @@ include_once "includes/header.php";
                         <option value="pago de publicidad">Pago de publicidad</option>
                         <option value="otros">Otros</option>
                     </select>
+                </div>
+                <div class="form-group" id="wrap_descripcion_otro" style="display:none;">
+                    <label><i class="fas fa-edit mr-2 text-info"></i> Especificar (otros) *</label>
+                    <textarea id="descripcion_otro" name="descripcion_otro" class="form-control form-control-modern" rows="2" placeholder="Detalle del movimiento"></textarea>
                 </div>
                 <div class="text-center">
                     <button type="button" class="btn btn-modern btn-modern-primary" id="agregar_saldos" name="agregar_saldos">
@@ -277,8 +316,9 @@ include_once "includes/header.php";
                         <div class="form-group">
                             <label><i class="fas fa-user mr-2 text-info"></i> Usuario *</label>
                             <select name="user" class="form-control select-modern" required>
-                                <option value="1">Nati</option>
-                                <option value="8">Sol</option>
+                                <option value="todos" <?php echo (isset($_GET['user']) && $_GET['user'] === 'todos') ? 'selected' : ''; ?>>Todos</option>
+                                <option value="1" <?php echo (!isset($_GET['user']) || $_GET['user'] === '1') ? 'selected' : ''; ?>>Nati</option>
+                                <option value="8" <?php echo (isset($_GET['user']) && $_GET['user'] === '8') ? 'selected' : ''; ?>>Sol</option>
                             </select>
                         </div>
                     </div>
@@ -302,10 +342,11 @@ include_once "includes/header.php";
         $user = mysqli_real_escape_string($conexion, $_GET['user']);
         $from_date = mysqli_real_escape_string($conexion, $_GET['from_date']);
         $to_date = mysqli_real_escape_string($conexion, $_GET['to_date']);
-        
+
+        $filtro_usuario = ($user === 'todos') ? "" : "ventas.id_usuario = '$user' AND ";
         $query = "SELECT ventas.*, cliente.nombre FROM ventas
                   JOIN cliente ON ventas.id_cliente = cliente.idcliente
-                  WHERE ventas.id_usuario = '$user' AND ventas.fecha BETWEEN '$from_date' AND '$to_date'";
+                  WHERE {$filtro_usuario} ventas.fecha BETWEEN '$from_date' AND '$to_date'";
         $query_run = mysqli_query($conexion, $query);
         
         if (!$query_run) {
@@ -356,35 +397,70 @@ include_once "includes/header.php";
         </div>
     <?php } ?>
 </div>
-<script>      
-$('#agregar_saldos').click(function () {
-    var valor = document.getElementById('valor');
-    if(valor.value == "" || valor.value == 0){   
-    swal.fire
-    ({
-        position: 'top-end',
-        showConfirmButton: false,
-        title: 'Error',
-        text: 'El valor no puede ser 0',
-        icon: 'error'
-    })
-}
-    else{
-    if(confirm('¿Está seguro de agregar el valor? (no se puede cancelar)'))
-    {
-                {   
-                $.ajax({
-                        url: "saldos.php",
-                        type: "POST",
-                        data: $("#form_saldos").serialize(),
-                        success: function (resultado){
-                        $("#div_saldos").html(resultado);
-                }
-                });
-        }
-    }
-}
-})
-            
-</script>
 <?php include_once "includes/footer.php"; ?>
+<script>
+$(function () {
+    $('#descripcion').on('change', function () {
+        var on = $(this).val() === 'otros';
+        $('#wrap_descripcion_otro').toggle(on);
+        $('#descripcion_otro').prop('required', on);
+    }).trigger('change');
+
+    $('#agregar_saldos').on('click', function () {
+        var valor = $('#valor').val();
+        if (valor === '' || parseFloat(valor) === 0) {
+            Swal.fire({
+                position: 'top-end',
+                showConfirmButton: false,
+                title: 'Error',
+                text: 'El valor no puede ser 0',
+                icon: 'error',
+                timer: 2000
+            });
+            return;
+        }
+        if ($('#descripcion').val() === 'otros' && !$('#descripcion_otro').val().trim()) {
+            Swal.fire({
+                position: 'top-end',
+                showConfirmButton: false,
+                title: 'Complete el detalle',
+                text: 'Indique en qué consiste "Otros"',
+                icon: 'warning',
+                timer: 2500
+            });
+            return;
+        }
+        if (!confirm('¿Está seguro de agregar el valor? (no se puede cancelar)')) {
+            return;
+        }
+        $.ajax({
+            url: 'saldos.php',
+            type: 'POST',
+            data: $('#form_saldos').serialize(),
+            cache: false,
+            success: function (resultado) {
+                $('#div_saldos').html(resultado);
+            },
+            error: function (xhr, st, err) {
+                var msg = 'No se pudo guardar. ';
+                if (xhr.status === 404) {
+                    msg += 'No se encontró saldos.php (ruta incorrecta).';
+                } else if (xhr.status >= 500) {
+                    msg += 'Error del servidor (HTTP ' + xhr.status + ').';
+                } else if (st === 'timeout') {
+                    msg += 'Tiempo de espera agotado.';
+                } else {
+                    msg += (xhr.status ? 'HTTP ' + xhr.status : st || err || 'Sin respuesta');
+                }
+                Swal.fire({
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Error al guardar',
+                    text: msg,
+                    showConfirmButton: true
+                });
+            }
+        });
+    });
+});
+</script>

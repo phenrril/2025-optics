@@ -50,6 +50,26 @@ function shortText($value, $max = 34)
     return strlen($text) > $max ? substr($text, 0, $max - 3) . '...' : $text;
 }
 
+function normalizePaymentMethod($value)
+{
+    $method = trim((string)$value);
+    if ($method === '') {
+        return '';
+    }
+
+    $lower = strtolower($method);
+    if (strpos($lower, 'transfer') !== false) {
+        return 'Transferencia';
+    }
+
+    return $method;
+}
+
+function paymentDetailLine($method, $amount)
+{
+    return $method . ' ----- ' . money($amount);
+}
+
 $id = $_GET['v'];
 $idcliente = $_GET['cl'];
 $fecha = mysqli_query($conexion, "SELECT fecha FROM ventas WHERE id = '$id'"); 
@@ -66,8 +86,36 @@ $ventas2= mysqli_query($conexion, "SELECT * FROM detalle_venta where id_venta='$
 $postapagos = mysqli_query($conexion, "SELECT * FROM postpagos where id_venta='$id'");
 $idventas = mysqli_fetch_assoc($ventas2);
 $idpostapagos = mysqli_fetch_assoc($postapagos);
-$metodop = mysqli_query($conexion, "SELECT metodos.descripcion from metodos inner join ventas on ventas.id_metodo = metodos.id where ventas.id = '$id'");
-$metodopago = mysqli_fetch_assoc($metodop);
+
+$paymentBreakdown = [];
+$paymentQuery = mysqli_query($conexion, "SELECT m.descripcion, i.ingresos FROM ingresos i INNER JOIN metodos m ON i.id_metodo = m.id WHERE i.id_venta = '$id' ORDER BY i.id ASC");
+if ($paymentQuery) {
+    while ($paymentRow = mysqli_fetch_assoc($paymentQuery)) {
+        $normalized = normalizePaymentMethod($paymentRow['descripcion']);
+        $amount = (float)($paymentRow['ingresos'] ?? 0);
+        if ($normalized !== '') {
+            if (!isset($paymentBreakdown[$normalized])) {
+                $paymentBreakdown[$normalized] = 0;
+            }
+            $paymentBreakdown[$normalized] += $amount;
+        }
+    }
+}
+
+if (empty($paymentBreakdown)) {
+    $fallbackMethodQuery = mysqli_query($conexion, "SELECT metodos.descripcion FROM metodos INNER JOIN ventas ON ventas.id_metodo = metodos.id WHERE ventas.id = '$id'");
+    $fallbackMethod = mysqli_fetch_assoc($fallbackMethodQuery);
+    if ($fallbackMethod) {
+        $normalized = normalizePaymentMethod($fallbackMethod['descripcion']);
+        if ($normalized !== '') {
+            $paymentBreakdown[$normalized] = (float)$idpostapagos['abona'];
+        }
+    }
+}
+$paymentLines = [];
+foreach ($paymentBreakdown as $method => $amount) {
+    $paymentLines[] = paymentDetailLine($method, $amount);
+}
 
 $idCristal = ((int)$idventas['idcristal'] === 0) ? 'No asignado' : $idventas['idcristal'];
 
@@ -111,70 +159,6 @@ $pdf->Cell(56, 8, utf8_decode(shortText($datosC['direccion'], 28)), 0, 0, 'L', t
 $pdf->Cell(40, 8, utf8_decode(shortText($datosC['obrasocial'], 20)), 0, 1, 'L', true);
 $pdf->Ln(3);
 
-// Detalle de productos
-sectionTitle($pdf, 'Detalle de productos');
-$pdf->SetFont('Arial', 'B', 9);
-$pdf->SetFillColor(237, 242, 247);
-$pdf->Cell(12, 7, utf8_decode('N°'), 0, 0, 'C', true);
-$pdf->Cell(68, 7, utf8_decode('Descripcion'), 0, 0, 'L', true);
-$pdf->Cell(20, 7, 'Cantidad', 0, 0, 'C', true);
-$pdf->Cell(28, 7, 'Precio orig.', 0, 0, 'R', true);
-$pdf->Cell(30, 7, 'Precio c/dto', 0, 0, 'R', true);
-$pdf->Cell(38, 7, 'Sub total', 0, 1, 'R', true);
-
-$pdf->SetFont('Arial', '', 9);
-$contador = 1;
-$fill = false;
-while ($row = mysqli_fetch_assoc($ventas)) {
-    $pdf->SetFillColor($fill ? 250 : 255, $fill ? 252 : 255, $fill ? 255 : 255);
-    $pdf->Cell(12, 7, $contador, 0, 0, 'C', true);
-    $pdf->Cell(68, 7, utf8_decode(shortText($row['descripcion'], 36)), 0, 0, 'L', true);
-    $pdf->Cell(20, 7, $row['cantidad'], 0, 0, 'C', true);
-    $pdf->Cell(28, 7, money($row['precio_original']), 0, 0, 'R', true);
-    $pdf->Cell(30, 7, money($row['precio']), 0, 0, 'R', true);
-    $pdf->Cell(38, 7, money($row['cantidad'] * $row['precio']), 0, 1, 'R', true);
-    $total += $row['cantidad'] * $row['precio'];
-    $contador++;
-    $fill = !$fill;
-}
-
-$pdf->Ln(4);
-$pdf->SetFont('Arial', 'B', 11);
-$summaryX = 128;
-$summaryWLabel = 40;
-$summaryWValue = 28;
-$summaryYStart = $pdf->GetY();
-
-if ((float)$idventas['obrasocial'] > 0) {
-    $pdf->SetX($summaryX);
-    $pdf->Cell($summaryWLabel, 7, 'Obra Social', 0, 0, 'R');
-    $pdf->SetFont('Arial', '', 11);
-    $pdf->Cell($summaryWValue, 7, money($idventas['obrasocial']), 0, 1, 'R');
-    $pdf->SetFont('Arial', 'B', 11);
-}
-
-$pdf->SetX($summaryX);
-$pdf->Cell($summaryWLabel, 8, 'Total', 0, 0, 'R');
-$pdf->SetFont('Arial', 'B', 12);
-$pdf->Cell($summaryWValue, 8, money($total), 0, 1, 'R');
-
-$pdf->SetFont('Arial', 'B', 11);
-$pdf->SetX($summaryX);
-$pdf->Cell($summaryWLabel, 7, utf8_decode('Abona ' . $metodopago['descripcion']), 0, 0, 'R');
-$pdf->SetFont('Arial', '', 11);
-$pdf->Cell($summaryWValue, 7, money($idpostapagos['abona']), 0, 1, 'R');
-
-if ((float)$idpostapagos['abona'] != (float)$total) {
-    $pdf->SetFont('Arial', 'B', 11);
-    $pdf->SetX($summaryX);
-    $pdf->Cell($summaryWLabel, 7, 'Resto', 0, 0, 'R');
-    $pdf->Cell($summaryWValue, 7, money($idpostapagos['resto']), 0, 1, 'R');
-}
-$summaryYEnd = $pdf->GetY();
-$pdf->SetDrawColor(220, 225, 232);
-$pdf->Rect($summaryX - 4, $summaryYStart - 2, 76, ($summaryYEnd - $summaryYStart) + 5, 'D');
-
-$pdf->Ln(4);
 if ($datos44 != "") {
     sectionTitle($pdf, 'Graduaciones');
 }
@@ -229,6 +213,85 @@ if ($datos44 != "") {
         $pdf->Ln(4);
     }
 }
+
+// Detalle de productos
+sectionTitle($pdf, 'Detalle de productos');
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->SetFillColor(237, 242, 247);
+$pdf->Cell(12, 7, utf8_decode('N°'), 0, 0, 'C', true);
+$pdf->Cell(68, 7, utf8_decode('Descripcion'), 0, 0, 'L', true);
+$pdf->Cell(20, 7, 'Cantidad', 0, 0, 'C', true);
+$pdf->Cell(28, 7, 'Precio orig.', 0, 0, 'R', true);
+$pdf->Cell(30, 7, 'Precio c/dto', 0, 0, 'R', true);
+$pdf->Cell(38, 7, 'Sub total', 0, 1, 'R', true);
+
+$pdf->SetFont('Arial', '', 9);
+$contador = 1;
+$fill = false;
+while ($row = mysqli_fetch_assoc($ventas)) {
+    $pdf->SetFillColor($fill ? 250 : 255, $fill ? 252 : 255, $fill ? 255 : 255);
+    $pdf->Cell(12, 7, $contador, 0, 0, 'C', true);
+    $pdf->Cell(68, 7, utf8_decode(shortText($row['descripcion'], 36)), 0, 0, 'L', true);
+    $pdf->Cell(20, 7, $row['cantidad'], 0, 0, 'C', true);
+    $pdf->Cell(28, 7, money($row['precio_original']), 0, 0, 'R', true);
+    $pdf->Cell(30, 7, money($row['precio']), 0, 0, 'R', true);
+    $pdf->Cell(38, 7, money($row['cantidad'] * $row['precio']), 0, 1, 'R', true);
+    $total += $row['cantidad'] * $row['precio'];
+    $contador++;
+    $fill = !$fill;
+}
+
+$pdf->Ln(4);
+$pdf->SetFont('Arial', 'B', 11);
+$summaryX = 122;
+$summaryBoxW = 78;
+$summaryWLabel = 42;
+$summaryWValue = 36;
+$summaryYStart = $pdf->GetY();
+
+if ((float)$idventas['obrasocial'] > 0) {
+    $pdf->SetX($summaryX);
+    $pdf->Cell($summaryWLabel, 7, 'Obra Social', 0, 0, 'R');
+    $pdf->SetFont('Arial', '', 11);
+    $pdf->Cell($summaryWValue, 7, money($idventas['obrasocial']), 0, 1, 'R');
+    $pdf->SetFont('Arial', 'B', 11);
+}
+
+$pdf->SetX($summaryX);
+$pdf->Cell($summaryWLabel, 8, 'Total', 0, 0, 'R');
+$pdf->SetFont('Arial', 'B', 12);
+$pdf->Cell($summaryWValue, 8, money($total), 0, 1, 'R');
+
+$pdf->SetFont('Arial', 'B', 11);
+$pdf->SetX($summaryX);
+$pdf->Cell($summaryWLabel, 7, 'Abona', 0, 0, 'R');
+$pdf->SetFont('Arial', '', 11);
+$pdf->Cell($summaryWValue, 7, money($idpostapagos['abona']), 0, 1, 'R');
+
+$pdf->Ln(1);
+$pdf->SetFont('Arial', 'B', 10);
+$pdf->SetX($summaryX);
+$pdf->Cell($summaryBoxW, 6, utf8_decode('Pago por'), 0, 1, 'L');
+$pdf->SetX($summaryX);
+$pdf->SetFont('Arial', '', 10);
+if (empty($paymentLines)) {
+    $pdf->MultiCell($summaryBoxW, 5, '-', 0, 'L');
+} else {
+    foreach ($paymentLines as $paymentLine) {
+        $pdf->SetX($summaryX);
+        $pdf->MultiCell($summaryBoxW, 5, utf8_decode($paymentLine), 0, 'L');
+    }
+}
+
+if ((float)$idpostapagos['abona'] != (float)$total) {
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->SetX($summaryX);
+    $pdf->Cell($summaryWLabel, 7, 'Resto', 0, 0, 'R');
+    $pdf->Cell($summaryWValue, 7, money($idpostapagos['resto']), 0, 1, 'R');
+}
+$summaryYEnd = $pdf->GetY();
+$pdf->SetDrawColor(220, 225, 232);
+$pdf->Rect($summaryX - 4, $summaryYStart - 2, $summaryBoxW + 8, ($summaryYEnd - $summaryYStart) + 5, 'D');
 
 $pdf->SetY(-30);
 $pdf->SetDrawColor(230, 230, 230);

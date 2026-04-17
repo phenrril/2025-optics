@@ -437,28 +437,25 @@ include_once "includes/header.php";
 
 .payment-method {
     background: #f8f9fa;
-    padding: 20px;
+    padding: 14px;
     border-radius: 12px;
-    margin-bottom: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    justify-content: center;
-    align-items: center;
+    margin-bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
 }
 
 .payment-option {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    padding: 15px 25px;
+    gap: 10px;
+    padding: 12px 14px;
     border: 2px solid #e0e0e0;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s;
-    flex: 1;
-    min-width: 160px;
-    max-width: 220px;
-    justify-content: center;
+    min-height: 54px;
+    background: #fff;
 }
 
 .payment-option:hover {
@@ -469,7 +466,7 @@ include_once "includes/header.php";
 }
 
 .payment-option input[type="radio"] {
-    margin-right: 8px;
+    margin: 0;
     cursor: pointer;
 }
 
@@ -482,6 +479,28 @@ include_once "includes/header.php";
     margin: 0;
     cursor: pointer;
     font-weight: 500;
+    width: 100%;
+    line-height: 1.2;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.summary-field {
+    background: #f8f9fa;
+    border: 1px solid #e8edf3;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.summary-field label {
+    margin-bottom: 8px;
+    font-size: 0.92rem;
+    color: #2f3a4a;
+    display: block;
 }
 
 .total-display {
@@ -539,6 +558,14 @@ include_once "includes/header.php";
     
     .btn-modern {
         width: 100%;
+    }
+
+    .payment-method {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -765,6 +792,10 @@ include_once "includes/header.php";
                                 <input type="radio" id="pago4" name="pago" value="4">
                                 <label for="pago4"><i class="fas fa-exchange-alt mr-2"></i> Transferencia</label>
                             </div>
+                            <div class="payment-option">
+                                <input type="radio" id="pago5" name="pago" value="5">
+                                <label for="pago5"><i class="fas fa-flask mr-2"></i> Transf. laboratorio</label>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -778,12 +809,12 @@ include_once "includes/header.php";
                 </div>
                 <div class="card-body card-body-modern">
                 <form method="POST" id="form_descuento">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
+                        <div class="summary-grid">
+                            <div class="summary-field">
                                 <label class="font-weight-bold"><i class="fas fa-hand-holding-usd mr-2"></i> Abona</label>
                                 <input type="number" class="form-control form-control-modern select-modern" id="abona" step="0.01" min="0" placeholder="0.00">
                             </div>
-                            <div class="col-md-6">
+                            <div class="summary-field">
                                 <label class="font-weight-bold"><i class="fas fa-percentage mr-2"></i> % Descuento</label>
                                 <select id="porc" name="porc" class="form-control form-control-modern select-modern" style="width: 100%; display: block;">
                                     <option value="1">0% - Sin descuento</option>
@@ -801,13 +832,11 @@ include_once "includes/header.php";
                                         <option value="0.40">60%</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
+                            <div class="summary-field">
                                 <label class="font-weight-bold"><i class="fas fa-heartbeat mr-2"></i> Obra Social</label>
                                 <input type="number" class="form-control form-control-modern select-modern" id="obra_social" step="0.01" min="0" placeholder="0.00">
                             </div>
-                            <div class="col-md-6">
+                            <div class="summary-field">
                                 <label class="font-weight-bold"><i class="fas fa-balance-scale mr-2"></i> Resta</label>
                                 <input type="number" class="form-control form-control-modern select-modern" id="resto" disabled placeholder="0.00">
                             </div>
