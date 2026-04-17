@@ -101,7 +101,7 @@ if (isset($_GET['q'])) {
     $fecha = date("Y-m-d H:i:s");
 
     // Validar que los valores sean positivos
-    if ($abona < 0 || $descuento < 0 || $obrasocial < 0 || $metodo_pago < 1) {
+    if ($abona < 0 || $descuento < 0 || $obrasocial < 0 || $metodo_pago < 1 || $metodo_pago > 5) {
         echo json_encode(array('mensaje' => 'error', 'detalle' => 'Valores inválidos'));
         die();
     }
@@ -170,6 +170,16 @@ if (isset($_GET['q'])) {
         
         if (!$insertar_metodo) {
             throw new Exception("Error al insertar ingreso: " . mysqli_error($conexion));
+        }
+
+        // Transferencia al laboratorio: mismo monto como ingreso de venta y egreso (pago al lab), sin doble efecto en caja neto
+        if ($metodo_pago === 5 && $abona > 0) {
+            $desc_lab = mysqli_real_escape_string($conexion, "Transferencia laboratorio (venta #$ultimoId)");
+            $monto_eg = -abs($abona);
+            $ins_eg_lab = mysqli_query($conexion, "INSERT INTO egresos(egresos, descripcion, fecha, id_cliente, id_metodo) VALUES ($monto_eg, '$desc_lab', '$fecha', $id_cliente, 5)");
+            if (!$ins_eg_lab) {
+                throw new Exception("Error al registrar egreso laboratorio: " . mysqli_error($conexion));
+            }
         }
 
         // 3. Obtener detalles y graduaciones temporales

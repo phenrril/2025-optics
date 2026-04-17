@@ -229,6 +229,31 @@ if ($_POST) {
         </div>
     </div>
 
+    <?php
+    $metodo_transferencia_lab_ok = false;
+    $q_mtl = mysqli_query($conexion, "SELECT id FROM metodos WHERE id = 5 LIMIT 1");
+    if ($q_mtl && mysqli_num_rows($q_mtl) > 0) {
+        $metodo_transferencia_lab_ok = true;
+    }
+    ?>
+    <?php if (!$metodo_transferencia_lab_ok) { ?>
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card card-modern" id="cardMetodoTransferenciaLab" style="border: 2px solid #764ba2;">
+                <div class="card-header-modern" style="background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);">
+                    <i class="fas fa-database mr-2"></i> Base de datos — Método de pago
+                </div>
+                <div class="card-body card-body-modern">
+                    <p class="text-muted mb-0">Registra el método <strong>Transferencia laboratorio</strong> (id 5) en la tabla <code>metodos</code>. Este botón solo se muestra hasta que exista ese registro.</p>
+                    <button type="button" class="btn btn-modern btn-modern-primary mt-2" id="btnInstalarMetodoLab">
+                        <i class="fas fa-plus-circle mr-2"></i> Registrar método &quot;Transferencia laboratorio&quot;
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php } ?>
+
     <?php 
     // Verificar si el sistema de facturación ya está instalado
     $facturacion_instalada = file_exists(__DIR__ . '/../.facturacion_installed');
@@ -649,5 +674,34 @@ function initInstalador() {
             }
         });
     }
+
+    $('#btnInstalarMetodoLab').on('click', function () {
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Aplicando...');
+        $.ajax({
+            url: 'instalar_metodo_transferencia_lab.php',
+            type: 'POST',
+            dataType: 'json',
+            success: function (res) {
+                if (res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Listo',
+                        text: res.message,
+                        timer: 2800,
+                        showConfirmButton: true
+                    });
+                    $('#cardMetodoTransferenciaLab').closest('.row').fadeOut(400, function () { $(this).remove(); });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: res.message || 'No se pudo registrar' });
+                    $btn.prop('disabled', false).html('<i class="fas fa-plus-circle mr-2"></i> Registrar método "Transferencia laboratorio"');
+                }
+            },
+            error: function () {
+                Swal.fire({ icon: 'error', title: 'Error de red' });
+                $btn.prop('disabled', false).html('<i class="fas fa-plus-circle mr-2"></i> Registrar método "Transferencia laboratorio"');
+            }
+        });
+    });
 }
 </script>

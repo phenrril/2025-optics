@@ -539,6 +539,15 @@ document.querySelector("#buscar_venta")?.addEventListener("click", function () {
             success: function (resultado) {
                 $("#div_venta").html(resultado);
 
+            },
+            error: function (xhr, st, err) {
+                Swal.fire({
+                    position: 'top-mid',
+                    icon: 'error',
+                    title: 'Error al procesar postpago',
+                    text: xhr.status ? ('HTTP ' + xhr.status) : (st || err || 'Sin respuesta'),
+                    showConfirmButton: true
+                });
             }
         });
     }

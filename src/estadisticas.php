@@ -58,7 +58,8 @@ $ingresosMes = floatval($ingMes['s']);
 $qEgrMes = mysqli_query($conexion, "SELECT IFNULL(SUM(egresos),0) as s FROM egresos WHERE fecha BETWEEN '$inicioMes' AND NOW() ");
 $egrMes = mysqli_fetch_assoc($qEgrMes);
 $egresosMes = floatval($egrMes['s']);
-$gananciaMes = $ventasMesTotal - $egresosMes; // aproximación operativa
+// egresos en BD suelen ser negativos: sumar el total resta el gasto correctamente
+$gananciaMes = $ventasMesTotal + $egresosMes;
 
 // Serie: Ventas últimos 30 días
 $ventas30dLabels = [];

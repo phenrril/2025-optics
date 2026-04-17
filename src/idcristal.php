@@ -14,6 +14,22 @@ if (empty($existe) && $id_user != 1) {
     header("Location: permisos.php");
     exit();
 }
+$metodos_postpago = [];
+$qmp = mysqli_query($conexion, "SELECT id, descripcion FROM metodos ORDER BY id ASC");
+if ($qmp) {
+    while ($r = mysqli_fetch_assoc($qmp)) {
+        $metodos_postpago[] = $r;
+    }
+}
+if (empty($metodos_postpago)) {
+    $metodos_postpago = [
+        ['id' => 1, 'descripcion' => 'Efectivo'],
+        ['id' => 2, 'descripcion' => 'Crédito'],
+        ['id' => 3, 'descripcion' => 'Débito'],
+        ['id' => 4, 'descripcion' => 'Transferencia'],
+        ['id' => 5, 'descripcion' => 'Transferencia laboratorio'],
+    ];
+}
 include_once "includes/header.php";
 ?>
 
@@ -282,6 +298,18 @@ include_once "includes/header.php";
                                 placeholder="Ingresá el monto"
                                 required
                             >
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="input-group-modern-operaciones">
+                            <label><i class="fas fa-credit-card mr-2"></i> Medio de pago del abono *</label>
+                            <select id="id_metodo_postpago" name="id_metodo" class="form-control form-control-modern-operaciones" required>
+                                <?php foreach ($metodos_postpago as $mp) { ?>
+                                    <option value="<?php echo (int) $mp['id']; ?>"><?php echo htmlspecialchars($mp['descripcion']); ?></option>
+                                <?php } ?>
+                            </select>
                         </div>
                     </div>
                 </div>
