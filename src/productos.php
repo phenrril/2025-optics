@@ -444,22 +444,36 @@ if (!empty($_POST) && isset($_POST['codigo'])) {
                         <input id="id_marca" class="form-control" type="text" name="id_marca" placeholder="Ingrese la marca" required>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="form-group">
                         <label class="font-weight-bold"><i class="fas fa-percent mr-2"></i>Porcentaje</label>
                         <input id="id_porcentaje" class="form-control" type="number" name="id_porcentaje" placeholder="Ingrese el porcentaje" step="0.01" min="0" max="100" required>
                     </div>
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label class="font-weight-bold"><i class="fas fa-exchange-alt mr-2"></i>Modo</label>
+                        <select id="id_modo" class="form-control" name="id_modo">
+                            <option value="aumentar" selected>Aumentar</option>
+                            <option value="descontar">Descontar</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
                     <div class="form-group w-100">
-                        <button type="button" class="btn btn-modern-primary btn-block btn-modern-icon" id="btn_marca">
-                            <i class="fas fa-sync-alt mr-2"></i> Actualizar Precios
-                        </button>
+                        <div class="d-flex">
+                            <button type="button" class="btn btn-outline-primary btn-block btn-modern-icon mr-2" id="btn_preview_marca">
+                                <i class="fas fa-search mr-2"></i> Previsualizar
+                            </button>
+                            <button type="button" class="btn btn-modern-primary btn-block btn-modern-icon" id="btn_marca">
+                                <i class="fas fa-sync-alt mr-2"></i> Actualizar
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </form>
-        <div id="prueba" class="mt-3"></div>
+        <div id="preview_marca" class="alert alert-info mt-3 d-none"></div>
     </div>
 </div>
 </div> <!-- End productos-container -->
@@ -635,16 +649,118 @@ if (!empty($_POST) && isset($_POST['codigo'])) {
             });
         });
 
-        $("#btn_marca").click(function() {
+        function normalizarMarca(valor) {
+            return $.trim(valor).replace(/\s+/g, ' ');
+        }
+
+        function estadoCargaEnBotones(cargando) {
+            var $btnPreview = $("#btn_preview_marca");
+            var $btnActualizar = $("#btn_marca");
+
+            if (cargando) {
+                $btnPreview.prop("disabled", true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Procesando');
+                $btnActualizar.prop("disabled", true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Procesando');
+                return;
+            }
+
+            $btnPreview.prop("disabled", false).html('<i class="fas fa-search mr-2"></i> Previsualizar');
+            $btnActualizar.prop("disabled", false).html('<i class="fas fa-sync-alt mr-2"></i> Actualizar');
+        }
+
+        function construirDataConAccion(accion) {
+            var marca = normalizarMarca($("#id_marca").val());
+            $("#id_marca").val(marca);
+            return $("#form_marca").serialize() + "&accion=" + encodeURIComponent(accion);
+        }
+
+        $("#id_marca").on("blur", function() {
+            $(this).val(normalizarMarca($(this).val()));
+        });
+
+        $("#btn_preview_marca").click(function() {
+            estadoCargaEnBotones(true);
+            $("#preview_marca").addClass("d-none").html("");
+
             $.ajax({
                 url: "actualizar_porcentaje.php",
                 type: "post",
-                data: $("#form_marca").serialize(),
-                success: function(resultado) {
-                    $("#prueba").html(resultado);
+                dataType: "json",
+                data: construirDataConAccion("preview"),
+                success: function(response) {
+                    if (response.ok) {
+                        var modoTexto = response.modo === 'descontar' ? 'Descuento' : 'Aumento';
+                        var htmlPreview = '<strong>Previsualización:</strong> ' +
+                            modoTexto + ' de ' + response.porcentaje + '%. ' +
+                            response.total + ' productos activos. ' +
+                            'Promedio actual: $' + response.promedio_actual + ' | ' +
+                            'Promedio nuevo: $' + response.promedio_nuevo + '.';
+                        $("#preview_marca").removeClass("d-none").html(htmlPreview);
+                    } else {
+                        Swal.fire({
+                            position: 'top-end',
+                            icon: 'error',
+                            title: response.message || 'No se pudo previsualizar',
+                            showConfirmButton: false,
+                            timer: 2200
+                        });
+                    }
                 },
                 error: function() {
-                    $("#prueba").html('<div class="alert alert-danger">Error al actualizar precios</div>');
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Error al previsualizar',
+                        showConfirmButton: false,
+                        timer: 2200
+                    });
+                },
+                complete: function() {
+                    estadoCargaEnBotones(false);
+                }
+            });
+        });
+
+        $("#btn_marca").click(function() {
+            estadoCargaEnBotones(true);
+
+            $.ajax({
+                url: "actualizar_porcentaje.php",
+                type: "post",
+                dataType: "json",
+                data: construirDataConAccion("apply"),
+                success: function(response) {
+                    if (response.ok) {
+                        Swal.fire({
+                            position: 'top-end',
+                            icon: 'success',
+                            title: response.message + ' (' + response.updated + ' productos)',
+                            showConfirmButton: false,
+                            timer: 2200
+                        }).then(function() {
+                            window.location.reload();
+                        });
+                        return;
+                    }
+
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'error',
+                        title: response.message || 'No se pudo actualizar',
+                        showConfirmButton: false,
+                        timer: 2200
+                    });
+                },
+                error: function() {
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Error al actualizar precios',
+                        showConfirmButton: false,
+                        timer: 2200
+                    });
+                },
+                complete: function() {
+                    estadoCargaEnBotones(false);
                 }
             });
         });
