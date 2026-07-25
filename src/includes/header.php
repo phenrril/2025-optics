@@ -12,7 +12,8 @@
     <meta name="description" content="" />
     <meta name="author" content="" />
     <title>Panel de Administración</title>
-    
+    <link rel="icon" type="image/png" href="../assets/img/logo.png" />
+
     <!-- Preload recursos críticos -->
     <link rel="preload" href="../assets/css/styles.css" as="style">
     <link rel="preload" href="../assets/css/dataTables.bootstrap4.min.css" as="style">

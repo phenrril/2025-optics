@@ -127,6 +127,7 @@ if (!empty($_SESSION['active'])) {
     <meta name="description" content="Sistema de Gestión Óptica" />
     <meta name="author" content="" />
     <title>Iniciar Sesión - Sistema Óptica</title>
+    <link rel="icon" type="image/png" href="assets/img/logo.png" />
     <link href="assets/css/styles.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
