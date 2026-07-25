@@ -3,7 +3,7 @@
 <footer class="py-4 bg-light mt-auto">
     <div class="container-fluid">
         <div class="d-flex align-items-center justify-content-between small">
-            <div class="text-muted">Copyright &copy; Dev by S&M Informatica</div>
+            <div class="text-muted">Copyright &copy; Dev by <a href="https://orset.ar" target="_blank" rel="noopener">Orset.ar</a></div>
             <div>
                 <!-- <a href="#">S&M Informatica</a>
                 &middot;
