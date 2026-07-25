@@ -252,6 +252,7 @@ if ($query_all === false) {
                             <th><i class="fas fa-calendar mr-1"></i> Fecha</th>
                             <th><i class="fas fa-file-invoice mr-1"></i> Factura</th>
                             <th><i class="fas fa-file-pdf mr-1"></i> Recibo</th>
+                            <th><i class="fas fa-edit mr-1"></i> Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -336,11 +337,25 @@ if ($query_all === false) {
                                         <i class="fas fa-file-pdf mr-1"></i> Ver PDF
                                     </a>
                                 </td>
+                                <td>
+                                    <?php if ($tiene_factura) { ?>
+                                        <span class="badge badge-secondary" title="Venta facturada ante AFIP, no se puede editar ni anular">
+                                            <i class="fas fa-lock mr-1"></i> Facturada
+                                        </span>
+                                    <?php } else { ?>
+                                        <a href="editar_venta.php?v=<?php echo $row['id']; ?>"
+                                           class="btn btn-sm"
+                                           style="background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%); color: #333; border: none; padding: 6px 12px; border-radius: 6px;"
+                                           title="Ver / Editar / Anular venta">
+                                            <i class="fas fa-edit mr-1"></i> Editar
+                                        </a>
+                                    <?php } ?>
+                                </td>
                             </tr>
-                        <?php } 
+                        <?php }
                         } else { ?>
                             <tr>
-                                <td colspan="6" class="empty-state">
+                                <td colspan="7" class="empty-state">
                                     <i class="fas fa-receipt"></i>
                                     <h5 class="mt-3 mb-2">No hay ventas registradas</h5>
                                     <p class="text-muted">Las ventas que realices aparecerán aquí</p>

@@ -10,6 +10,28 @@ if (!isset($_SESSION['idUser']) || empty($_SESSION['idUser'])) {
 
 $id_user = intval($_SESSION['idUser']); // Sanitizar ID de usuario
 
+// Devuelve true si la venta ya tiene una factura electrónica aprobada ante AFIP (no editable/anulable)
+function ventaFacturada($conexion, $id_venta) {
+    $q = mysqli_query($conexion, "SELECT 1 FROM facturas_electronicas WHERE id_venta = $id_venta AND estado = 'aprobado' LIMIT 1");
+    return $q && mysqli_num_rows($q) > 0;
+}
+
+// Recalcula total/resto de la venta en base a la suma de detalle_venta y los propaga a postpagos/detalle_venta
+function recalcularTotalesVenta($conexion, $id_venta) {
+    $sum = mysqli_query($conexion, "SELECT COALESCE(SUM(precio * cantidad), 0) AS total FROM detalle_venta WHERE id_venta = $id_venta");
+    $total = floatval(mysqli_fetch_assoc($sum)['total']);
+
+    $ventaRow = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT abona FROM ventas WHERE id = $id_venta"));
+    $abona = floatval($ventaRow['abona'] ?? 0);
+    $resto = max(0, $total - $abona);
+
+    mysqli_query($conexion, "UPDATE ventas SET total = $total, resto = $resto WHERE id = $id_venta");
+    mysqli_query($conexion, "UPDATE detalle_venta SET resto = $resto WHERE id_venta = $id_venta");
+    mysqli_query($conexion, "UPDATE postpagos SET resto = $resto WHERE id_venta = $id_venta");
+
+    return $total;
+}
+
 // Buscar clientes (autocomplete)
 if (isset($_GET['q'])) {
     $datos = array();
@@ -552,6 +574,241 @@ if (isset($_GET['q'])) {
         ));
     } else {
         echo json_encode(array('success' => false, 'mensaje' => 'Error al registrar el cliente'));
+    }
+    die();
+
+// Cambiar cantidad de una línea de una venta ya cargada
+} else if (isset($_POST['editar_detalle_cantidad'])) {
+    $id_detalle = intval($_POST['id_detalle']);
+    $nueva_cantidad = intval($_POST['cantidad']);
+
+    if ($nueva_cantidad < 1) {
+        echo json_encode(array('success' => false, 'mensaje' => 'La cantidad debe ser al menos 1'));
+        die();
+    }
+
+    $linea = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT * FROM detalle_venta WHERE id = $id_detalle"));
+    if (!$linea) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Línea de venta no encontrada'));
+        die();
+    }
+
+    $id_venta = intval($linea['id_venta']);
+    if (ventaFacturada($conexion, $id_venta)) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Venta facturada ante AFIP, no se puede modificar'));
+        die();
+    }
+
+    $id_producto = intval($linea['id_producto']);
+    $cantidad_actual = intval($linea['cantidad']);
+    $diferencia = $nueva_cantidad - $cantidad_actual; // positivo = necesita más stock
+
+    $producto = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT existencia FROM producto WHERE codproducto = $id_producto"));
+    $existencia = intval($producto['existencia'] ?? 0);
+
+    if ($diferencia > 0 && $existencia < $diferencia) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Stock insuficiente para aumentar la cantidad'));
+        die();
+    }
+
+    mysqli_begin_transaction($conexion);
+    try {
+        $ok1 = mysqli_query($conexion, "UPDATE detalle_venta SET cantidad = $nueva_cantidad WHERE id = $id_detalle");
+        if (!$ok1) throw new Exception(mysqli_error($conexion));
+
+        $ok2 = mysqli_query($conexion, "UPDATE producto SET existencia = existencia - ($diferencia) WHERE codproducto = $id_producto");
+        if (!$ok2) throw new Exception(mysqli_error($conexion));
+
+        $nuevoTotal = recalcularTotalesVenta($conexion, $id_venta);
+        mysqli_commit($conexion);
+        echo json_encode(array('success' => true, 'total' => $nuevoTotal));
+    } catch (Exception $e) {
+        mysqli_rollback($conexion);
+        echo json_encode(array('success' => false, 'mensaje' => $e->getMessage()));
+    }
+    die();
+
+// Cambiar precio de una línea de una venta ya cargada
+} else if (isset($_POST['editar_detalle_precio'])) {
+    $id_detalle = intval($_POST['id_detalle']);
+    $nuevo_precio = floatval($_POST['precio']);
+
+    if ($nuevo_precio < 0) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Precio inválido'));
+        die();
+    }
+
+    $linea = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT id_venta FROM detalle_venta WHERE id = $id_detalle"));
+    if (!$linea) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Línea de venta no encontrada'));
+        die();
+    }
+
+    $id_venta = intval($linea['id_venta']);
+    if (ventaFacturada($conexion, $id_venta)) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Venta facturada ante AFIP, no se puede modificar'));
+        die();
+    }
+
+    $ok = mysqli_query($conexion, "UPDATE detalle_venta SET precio = $nuevo_precio WHERE id = $id_detalle");
+    if (!$ok) {
+        echo json_encode(array('success' => false, 'mensaje' => mysqli_error($conexion)));
+        die();
+    }
+
+    $nuevoTotal = recalcularTotalesVenta($conexion, $id_venta);
+    echo json_encode(array('success' => true, 'total' => $nuevoTotal));
+    die();
+
+// Eliminar una línea de producto de una venta ya cargada (restaura stock)
+} else if (isset($_POST['eliminar_detalle_venta'])) {
+    $id_detalle = intval($_POST['id_detalle']);
+
+    $linea = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT * FROM detalle_venta WHERE id = $id_detalle"));
+    if (!$linea) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Línea de venta no encontrada'));
+        die();
+    }
+
+    $id_venta = intval($linea['id_venta']);
+    if (ventaFacturada($conexion, $id_venta)) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Venta facturada ante AFIP, no se puede modificar'));
+        die();
+    }
+
+    $total_lineas = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) AS total FROM detalle_venta WHERE id_venta = $id_venta"));
+    if (intval($total_lineas['total']) <= 1) {
+        echo json_encode(array('success' => false, 'mensaje' => 'No se puede dejar la venta sin productos. Si querés eliminarla por completo, usá "Anular venta".'));
+        die();
+    }
+
+    $id_producto = intval($linea['id_producto']);
+    $cantidad = intval($linea['cantidad']);
+
+    mysqli_begin_transaction($conexion);
+    try {
+        $ok1 = mysqli_query($conexion, "UPDATE producto SET existencia = existencia + $cantidad WHERE codproducto = $id_producto");
+        if (!$ok1) throw new Exception(mysqli_error($conexion));
+
+        // Reactivar producto si vuelve a tener stock
+        mysqli_query($conexion, "UPDATE producto SET estado = 1 WHERE codproducto = $id_producto AND existencia > 0");
+
+        $ok2 = mysqli_query($conexion, "DELETE FROM detalle_venta WHERE id = $id_detalle");
+        if (!$ok2) throw new Exception(mysqli_error($conexion));
+
+        $nuevoTotal = recalcularTotalesVenta($conexion, $id_venta);
+        mysqli_commit($conexion);
+        echo json_encode(array('success' => true, 'total' => $nuevoTotal));
+    } catch (Exception $e) {
+        mysqli_rollback($conexion);
+        echo json_encode(array('success' => false, 'mensaje' => $e->getMessage()));
+    }
+    die();
+
+// Agregar un producto nuevo a una venta ya cargada
+} else if (isset($_POST['agregar_detalle_venta'])) {
+    $id_venta = intval($_POST['id_venta']);
+    $id_producto = intval($_POST['id_producto']);
+    $cantidad = intval($_POST['cantidad']);
+
+    if ($id_venta <= 0 || $id_producto <= 0 || $cantidad < 1) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Datos inválidos'));
+        die();
+    }
+
+    if (ventaFacturada($conexion, $id_venta)) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Venta facturada ante AFIP, no se puede modificar'));
+        die();
+    }
+
+    $venta = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT * FROM ventas WHERE id = $id_venta"));
+    if (!$venta) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Venta no encontrada'));
+        die();
+    }
+
+    $producto = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT * FROM producto WHERE codproducto = $id_producto"));
+    if (!$producto) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Producto no encontrado'));
+        die();
+    }
+
+    $existencia = intval($producto['existencia']);
+    if ($existencia < $cantidad) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Stock insuficiente'));
+        die();
+    }
+
+    $precio = floatval($producto['precio']);
+    $abona = floatval($venta['abona']);
+    $resto = floatval($venta['resto']);
+    $obrasocial = floatval($venta['obrasocial']);
+
+    mysqli_begin_transaction($conexion);
+    try {
+        $ok1 = mysqli_query($conexion, "INSERT INTO detalle_venta(id_producto, id_venta, cantidad, precio, precio_original, idcristal, abona, resto, obrasocial) VALUES ($id_producto, $id_venta, $cantidad, $precio, $precio, 0, $abona, $resto, $obrasocial)");
+        if (!$ok1) throw new Exception(mysqli_error($conexion));
+
+        $ok2 = mysqli_query($conexion, "UPDATE producto SET existencia = existencia - $cantidad WHERE codproducto = $id_producto");
+        if (!$ok2) throw new Exception(mysqli_error($conexion));
+
+        if ($existencia - $cantidad <= 0) {
+            mysqli_query($conexion, "UPDATE producto SET estado = 0 WHERE codproducto = $id_producto");
+        }
+
+        $nuevoTotal = recalcularTotalesVenta($conexion, $id_venta);
+        mysqli_commit($conexion);
+        echo json_encode(array('success' => true, 'total' => $nuevoTotal, 'id_detalle' => mysqli_insert_id($conexion)));
+    } catch (Exception $e) {
+        mysqli_rollback($conexion);
+        echo json_encode(array('success' => false, 'mensaje' => $e->getMessage()));
+    }
+    die();
+
+// Guardar/actualizar la graduación asociada a una venta
+} else if (isset($_POST['guardar_graduacion_venta'])) {
+    $id_venta = intval($_POST['id_venta']);
+
+    if ($id_venta <= 0) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Venta inválida'));
+        die();
+    }
+
+    if (ventaFacturada($conexion, $id_venta)) {
+        echo json_encode(array('success' => false, 'mensaje' => 'Venta facturada ante AFIP, no se puede modificar'));
+        die();
+    }
+
+    $campos = ['od_l_1', 'od_l_2', 'od_l_3', 'oi_l_1', 'oi_l_2', 'oi_l_3', 'od_c_1', 'od_c_2', 'od_c_3', 'oi_c_1', 'oi_c_2', 'oi_c_3', 'addg', 'obs'];
+    $valores = array();
+    foreach ($campos as $campo) {
+        $valores[$campo] = mysqli_real_escape_string($conexion, $_POST[$campo] ?? '');
+    }
+
+    $existe = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT id FROM graduaciones WHERE id_venta = $id_venta LIMIT 1"));
+
+    if ($existe) {
+        $sets = array();
+        foreach ($campos as $campo) {
+            $sets[] = "$campo = '{$valores[$campo]}'";
+        }
+        $sql = "UPDATE graduaciones SET " . implode(', ', $sets) . " WHERE id_venta = $id_venta";
+        $ok = mysqli_query($conexion, $sql);
+    } else {
+        $sql = "INSERT INTO graduaciones(od_l_1, od_l_2, od_l_3, oi_l_1, oi_l_2, oi_l_3, od_c_1, od_c_2, od_c_3, oi_c_1, oi_c_2, oi_c_3, addg, id_venta, obs) VALUES (
+            '{$valores['od_l_1']}', '{$valores['od_l_2']}', '{$valores['od_l_3']}',
+            '{$valores['oi_l_1']}', '{$valores['oi_l_2']}', '{$valores['oi_l_3']}',
+            '{$valores['od_c_1']}', '{$valores['od_c_2']}', '{$valores['od_c_3']}',
+            '{$valores['oi_c_1']}', '{$valores['oi_c_2']}', '{$valores['oi_c_3']}',
+            '{$valores['addg']}', $id_venta, '{$valores['obs']}'
+        )";
+        $ok = mysqli_query($conexion, $sql);
+    }
+
+    if ($ok) {
+        echo json_encode(array('success' => true));
+    } else {
+        echo json_encode(array('success' => false, 'mensaje' => mysqli_error($conexion)));
     }
     die();
 }

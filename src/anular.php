@@ -2,7 +2,21 @@
 require "../conexion.php";
 session_start();
 
-$id_venta = $_POST['idanular'];
+$id_venta = intval($_POST['idanular']);
+
+$facturada = mysqli_query($conexion, "SELECT 1 FROM facturas_electronicas WHERE id_venta = $id_venta AND estado = 'aprobado' LIMIT 1");
+if ($facturada && mysqli_num_rows($facturada) > 0) {
+    echo "<script>Swal.fire({
+        position: 'top-mid',
+        icon: 'error',
+        title: 'No se puede anular',
+        text: 'Esta venta ya fue facturada ante AFIP y no puede modificarse ni eliminarse.',
+        showConfirmButton: false,
+        timer: 3000
+    })</script>;";
+    exit;
+}
+
 $consultaDetalle = mysqli_query($conexion, "SELECT * FROM detalle_venta WHERE id_venta = $id_venta");
 $numFilas = mysqli_num_rows($consultaDetalle);
 
