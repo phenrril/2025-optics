@@ -113,11 +113,11 @@
     
     <!-- Cargar Font Awesome de forma asíncrona para no bloquear renderizado -->
     <script src="../assets/js/all.min.js" crossorigin="anonymous" defer></script>
-    
-    <!-- Preload scripts críticos -->
-    <link rel="preload" href="../assets/js/jquery-3.6.0.min.js" as="script">
-    <link rel="preload" href="../assets/js/bootstrap.bundle.min.js" as="script">
-    
+
+    <!-- jQuery debe cargarse acá: hay páginas con <script> inline antes del footer que usan $ -->
+    <script src="../assets/js/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+    <script src="../assets/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
 </head>
 
 <body class="sb-nav-fixed">

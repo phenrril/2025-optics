@@ -35,8 +35,9 @@ while ($row = mysqli_fetch_assoc($consultaDetalle)) {
         $reactivar = mysqli_query($conexion, "UPDATE producto SET estado = 1 WHERE codproducto = $id_producto");
     }
 } 
-$eliminarDet = mysqli_query($conexion, "DELETE FROM detalle_venta WHERE id_venta = $id_venta"); 
-$eliminarPost = mysqli_query($conexion, "DELETE FROM postpagos WHERE id_venta = $id_venta"); 
+$eliminarDet = mysqli_query($conexion, "DELETE FROM detalle_venta WHERE id_venta = $id_venta");
+$eliminarPost = mysqli_query($conexion, "DELETE FROM postpagos WHERE id_venta = $id_venta");
+$eliminarGrad = mysqli_query($conexion, "DELETE FROM graduaciones WHERE id_venta = $id_venta");
 $eliminar = mysqli_query($conexion, "DELETE FROM ventas WHERE id = $id_venta");
 
 echo "<script>Swal.fire({

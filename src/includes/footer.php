@@ -39,8 +39,6 @@
         </div>
     </div>
 </div>
-<script src="../assets/js/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
-<script src="../assets/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 <script src="../assets/js/scripts.js"></script>
 <script src="../assets/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
 <script src="../assets/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
