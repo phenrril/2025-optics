@@ -297,39 +297,14 @@ if (!empty($_POST) && isset($_POST['codigo'])) {
                     <td><?php echo $costo_badge; ?></td>
                     <td>
                         <div class="btn-group" role="group">
-                            <?php if ($data['estado'] == 1) { ?>
-                                <a href="agregar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-primary btn-sm btn-action" title="Agregar Stock">
-                                    <i class='fas fa-plus-circle'></i>
-                                </a>
-                                <a href="editar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-success btn-sm btn-action" title="Editar">
-                                    <i class='fas fa-edit'></i>
-                                </a>
-                                <a href="inactivar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-warning btn-sm btn-action confirmar-inactivar" title="Inactivar">
-                                    <i class='fas fa-ban'></i>
-                                </a>
-                                <form action="eliminar_producto.php?id=<?php echo $data['codproducto']; ?>" method="post" class="confirmar-eliminar d-inline">
-                                    <button class="btn btn-danger btn-sm btn-action" type="submit" title="Eliminar Permanentemente">
-                                        <i class='fas fa-trash-alt'></i>
-                                    </button>
-                                </form>
-                            <?php } ?>
-                            
-                            <?php if ($data['estado'] == 0) { ?>
-                                <a href="agregar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-primary btn-sm btn-action" title="Agregar Stock">
-                                    <i class='fas fa-plus-circle'></i>
-                                </a>
-                                <a href="editar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-success btn-sm btn-action" title="Editar">
-                                    <i class='fas fa-edit'></i>
-                                </a>
-                                <a href="activar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-warning btn-sm btn-action" title="Activar">
-                                    <i class='fas fa-check-circle'></i>
-                                </a>
-                                <form action="eliminar_producto.php?id=<?php echo $data['codproducto']; ?>" method="post" class="confirmar-eliminar d-inline">
-                                    <button class="btn btn-danger btn-sm btn-action" type="submit" title="Eliminar Permanentemente">
-                                        <i class='fas fa-trash-alt'></i>
-                                    </button>
-                                </form>
-                            <?php } ?>
+                            <a href="editar_producto.php?id=<?php echo $data['codproducto']; ?>" class="btn btn-success btn-sm btn-action" title="Editar precio, stock y estado">
+                                <i class='fas fa-edit'></i>
+                            </a>
+                            <form action="eliminar_producto.php?id=<?php echo $data['codproducto']; ?>" method="post" class="confirmar-eliminar d-inline">
+                                <button class="btn btn-danger btn-sm btn-action" type="submit" title="Eliminar Permanentemente">
+                                    <i class='fas fa-trash-alt'></i>
+                                </button>
+                            </form>
                         </div>
                     </td>
                 </tr>
@@ -606,26 +581,6 @@ if (!empty($_POST) && isset($_POST['codigo'])) {
             
             console.log('Navegando a:', href);
             // Permitir la navegación normal
-        });
-
-        // Confirmación para inactivar producto
-        $('.confirmar-inactivar').on('click', function(e) {
-            e.preventDefault();
-            var url = $(this).attr('href');
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: "El producto se marcará como inactivo pero no se eliminará de la base de datos",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ffc107',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Sí, inactivar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = url;
-                }
-            });
         });
 
         // Confirmación para eliminar producto permanentemente

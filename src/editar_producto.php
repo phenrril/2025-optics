@@ -36,17 +36,18 @@ if (!empty($_POST)) {
     $precio_bruto = floatval($_POST['precio_bruto']);
     $marca = mysqli_real_escape_string($conexion, $_POST['marca']);
     $costo = isset($_POST['costo']) ? 1 : 0;
-    
+    $estado = isset($_POST['estado']) ? 1 : 0;
+
     // Verificar si existe la columna costo
     $check_column = mysqli_query($conexion, "SHOW COLUMNS FROM producto LIKE 'costo'");
     $column_exists = mysqli_num_rows($check_column) > 0;
-    
+
     if ($column_exists) {
         // Si existe la columna, incluirla en el UPDATE
-        $query_update = mysqli_query($conexion, "UPDATE producto SET codigo = '$codigo', descripcion = '$producto', precio = '$precio', marca = '$marca', precio_bruto = '$precio_bruto', costo = '$costo' WHERE codproducto = $codproducto");
+        $query_update = mysqli_query($conexion, "UPDATE producto SET codigo = '$codigo', descripcion = '$producto', precio = '$precio', existencia = '$cantidad', marca = '$marca', precio_bruto = '$precio_bruto', costo = '$costo', estado = '$estado' WHERE codproducto = $codproducto");
     } else {
         // Si no existe, no incluir el campo costo
-        $query_update = mysqli_query($conexion, "UPDATE producto SET codigo = '$codigo', descripcion = '$producto', precio = '$precio', marca = '$marca', precio_bruto = '$precio_bruto' WHERE codproducto = $codproducto");
+        $query_update = mysqli_query($conexion, "UPDATE producto SET codigo = '$codigo', descripcion = '$producto', precio = '$precio', existencia = '$cantidad', marca = '$marca', precio_bruto = '$precio_bruto', estado = '$estado' WHERE codproducto = $codproducto");
     }
     if ($query_update) {
       $alert = '<div class="alert alert-primary" role="alert">
@@ -115,7 +116,7 @@ if (empty($_REQUEST['id'])) {
             <label for="cantidad">Stock</label>
             <input type="number" placeholder="Ingrese Stock" class="form-control" name="cantidad" id="cantidad" value="<?php echo isset($data_producto['existencia']) ? $data_producto['existencia'] : ''; ?>">
           </div>
-          <?php 
+          <?php
           // Verificar si existe la columna costo
           $check_column_display = mysqli_query($conexion, "SHOW COLUMNS FROM producto LIKE 'costo'");
           $column_exists_display = mysqli_num_rows($check_column_display) > 0;
@@ -129,6 +130,14 @@ if (empty($_REQUEST['id'])) {
             </div>
           </div>
           <?php } ?>
+          <div class="form-group">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" name="estado" id="estado" value="1" <?php echo ($data_producto['estado'] == 1) ? 'checked' : ''; ?>>
+              <label class="form-check-label" for="estado">
+                <i class="fas fa-power-off mr-2"></i> Producto activo
+              </label>
+            </div>
+          </div>
           <input type="submit" value="Actualizar Producto" class="btn btn-primary">
           <a href="productos.php" class="btn btn-danger">Atras</a>
         </form>
