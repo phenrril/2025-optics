@@ -451,6 +451,47 @@ if (!empty($_POST) && isset($_POST['codigo'])) {
         <div id="preview_marca" class="alert alert-info mt-3 d-none"></div>
     </div>
 </div>
+
+<!-- Marcar/Desmarcar Costo (en negro) por Marca -->
+<div class="card-modern mt-4">
+    <div class="card-header-modern">
+        <i class="fas fa-tag mr-2"></i> Marcar Costo por Marca
+    </div>
+    <div class="card-body-modern">
+        <form method="post" id="form_costo_marca">
+            <div class="row justify-content-center">
+                <div class="col-md-5">
+                    <div class="form-group">
+                        <label class="font-weight-bold"><i class="fas fa-tag mr-2"></i>Marca</label>
+                        <input id="id_marca_costo" class="form-control" type="text" name="id_marca" placeholder="Ingrese la marca" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label class="font-weight-bold"><i class="fas fa-exchange-alt mr-2"></i>Acción</label>
+                        <select id="id_modo_costo" class="form-control" name="id_modo_costo">
+                            <option value="marcar" selected>Marcar como costo</option>
+                            <option value="desmarcar">Desmarcar costo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-group w-100">
+                        <div class="d-flex">
+                            <button type="button" class="btn btn-outline-primary btn-block btn-modern-icon mr-2" id="btn_preview_costo_marca">
+                                <i class="fas fa-search mr-2"></i> Previsualizar
+                            </button>
+                            <button type="button" class="btn btn-modern-primary btn-block btn-modern-icon" id="btn_costo_marca">
+                                <i class="fas fa-sync-alt mr-2"></i> Aplicar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div id="preview_costo_marca" class="alert alert-info mt-3 d-none"></div>
+    </div>
+</div>
 </div> <!-- End productos-container -->
 
 <?php include_once "includes/footer.php"; ?>
@@ -462,14 +503,16 @@ if (!empty($_POST) && isset($_POST['codigo'])) {
         $('#total-productos').text(totalProductos);
         
         // Toggle columna Precio Bruto (checked = ocultar)
+        // Usa la API de columnas de DataTables (no jQuery hide/show directo):
+        // ocultar la celda a mano deja el modelo interno de columnas desincronizado
+        // y al buscar/redibujar el header y las filas terminan desfasados.
+        // El índice se calcula UNA sola vez: al ocultar una columna, DataTables
+        // saca el <th> del DOM, así que buscarlo de nuevo por clase después falla.
+        var colIndexPrecioBruto = $('#tbl thead th.col-precio-bruto').index();
         function aplicarVisibilidadPrecioBruto() {
             var ocultar = $('#toggle-precio-bruto').is(':checked');
-            var $columnas = $('#tbl th.col-precio-bruto, #tbl td.col-precio-bruto');
-            if (ocultar) {
-                $columnas.hide();
-            } else {
-                $columnas.show();
-            }
+            var tabla = $('#tbl').DataTable();
+            tabla.column(colIndexPrecioBruto).visible(!ocultar);
         }
 
         // Estado inicial (checkbox viene checked por defecto → ocultar)
@@ -716,6 +759,115 @@ if (!empty($_POST) && isset($_POST['codigo'])) {
                 },
                 complete: function() {
                     estadoCargaEnBotones(false);
+                }
+            });
+        });
+
+        function estadoCargaEnBotonesCosto(cargando) {
+            var $btnPreview = $("#btn_preview_costo_marca");
+            var $btnAplicar = $("#btn_costo_marca");
+
+            if (cargando) {
+                $btnPreview.prop("disabled", true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Procesando');
+                $btnAplicar.prop("disabled", true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Procesando');
+                return;
+            }
+
+            $btnPreview.prop("disabled", false).html('<i class="fas fa-search mr-2"></i> Previsualizar');
+            $btnAplicar.prop("disabled", false).html('<i class="fas fa-sync-alt mr-2"></i> Aplicar');
+        }
+
+        function construirDataCostoMarca(accion) {
+            var marca = normalizarMarca($("#id_marca_costo").val());
+            $("#id_marca_costo").val(marca);
+            return $("#form_costo_marca").serialize() + "&accion=" + encodeURIComponent(accion);
+        }
+
+        $("#id_marca_costo").on("blur", function() {
+            $(this).val(normalizarMarca($(this).val()));
+        });
+
+        $("#btn_preview_costo_marca").click(function() {
+            estadoCargaEnBotonesCosto(true);
+            $("#preview_costo_marca").addClass("d-none").html("");
+
+            $.ajax({
+                url: "actualizar_costo_marca.php",
+                type: "post",
+                dataType: "json",
+                data: construirDataCostoMarca("preview"),
+                success: function(response) {
+                    if (response.ok) {
+                        var accionTexto = response.modo === 'marcar' ? 'marcar como costo' : 'desmarcar costo de';
+                        $("#preview_costo_marca").removeClass("d-none").html(
+                            '<strong>Previsualización:</strong> se va a ' + accionTexto + ' ' + response.total + ' producto(s).'
+                        );
+                    } else {
+                        Swal.fire({
+                            position: 'top-end',
+                            icon: 'error',
+                            title: response.message || 'No se pudo previsualizar',
+                            showConfirmButton: false,
+                            timer: 2200
+                        });
+                    }
+                },
+                error: function() {
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Error al previsualizar',
+                        showConfirmButton: false,
+                        timer: 2200
+                    });
+                },
+                complete: function() {
+                    estadoCargaEnBotonesCosto(false);
+                }
+            });
+        });
+
+        $("#btn_costo_marca").click(function() {
+            estadoCargaEnBotonesCosto(true);
+
+            $.ajax({
+                url: "actualizar_costo_marca.php",
+                type: "post",
+                dataType: "json",
+                data: construirDataCostoMarca("apply"),
+                success: function(response) {
+                    if (response.ok) {
+                        Swal.fire({
+                            position: 'top-end',
+                            icon: 'success',
+                            title: response.message + ' (' + response.updated + ' productos)',
+                            showConfirmButton: false,
+                            timer: 2200
+                        }).then(function() {
+                            window.location.reload();
+                        });
+                        return;
+                    }
+
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'error',
+                        title: response.message || 'No se pudo actualizar',
+                        showConfirmButton: false,
+                        timer: 2200
+                    });
+                },
+                error: function() {
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Error al actualizar',
+                        showConfirmButton: false,
+                        timer: 2200
+                    });
+                },
+                complete: function() {
+                    estadoCargaEnBotonesCosto(false);
                 }
             });
         });
