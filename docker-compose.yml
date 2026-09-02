@@ -1,20 +1,20 @@
+name: ojito-de-sol
+
 services:
   db:
     image: mysql:8.0
-    container_name: optica_db
+    container_name: ojito-de-sol_db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: c2880275_ventas
       MYSQL_USER: c2880275_ventas
       MYSQL_PASSWORD: wego76FIfe
-    ports:
-      - "3307:3306"
     volumes:
       - ./mysql-data:/var/lib/mysql
       - "./nati30.sql:/docker-entrypoint-initdb.d/init.sql"
     networks:
-      - optica-network
+      - ojito-de-sol_internal
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -22,10 +22,8 @@ services:
 
   web:
     build: .
-    container_name: optica_web
+    container_name: ojito-de-sol_web
     restart: always
-    ports:
-      - "8000:80"
     volumes:
       - .:/var/www/html
       # Certificados AFIP/ARCA montados como solo lectura dentro del contenedor
@@ -43,9 +41,12 @@ services:
       DB_PASSWORD: wego76FIfe
       DB_NAME: c2880275_ventas
     networks:
-      - optica-network
+      - ojito-de-sol_internal
+      - public_network
 
 networks:
-  optica-network:
+  ojito-de-sol_internal:
     driver: bridge
+  public_network:
+    external: true
 
